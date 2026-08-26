@@ -911,10 +911,16 @@ def write_3mf(path, parts):
     out.append("</resources><build>")
     out.extend(items)
     out.append("</build></model>")
+    # Fixed timestamps: a 3MF is a zip, and zip entries carry the wall clock
+    # by default. Without this, re-running the generator rewrites four files
+    # that contain identical geometry, and the diff is pure noise.
     with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as z:
-        z.writestr("[Content_Types].xml", CT)
-        z.writestr("_rels/.rels", RELS)
-        z.writestr("3D/3dmodel.model", "".join(out))
+        for name, data in (("[Content_Types].xml", CT), ("_rels/.rels", RELS),
+                           ("3D/3dmodel.model", "".join(out))):
+            info = zipfile.ZipInfo(name, date_time=(1980, 1, 1, 0, 0, 0))
+            info.compress_type = zipfile.ZIP_DEFLATED
+            info.external_attr = 0o644 << 16
+            z.writestr(info, data)
 
 
 def pack(items, plate=PLATE, gap=8.0, margin=8.0):
