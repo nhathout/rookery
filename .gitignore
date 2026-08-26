@@ -1,0 +1,17 @@
+# PlatformIO
+firmware/.pio/
+firmware/.vscode/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+build/
+dist/
+
+# Printable meshes ARE committed -- regenerate with hardware/generate.py
+
+# OS
+.DS_Store

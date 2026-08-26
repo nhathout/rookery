@@ -1,0 +1,106 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear|fork",
+        "hooks": [
+          {
+            "type": "http",
+            "url": "http://127.0.0.1:8787/hook",
+            "timeout": 5,
+            "statusMessage": "rookery"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "http",
+            "url": "http://127.0.0.1:8787/hook",
+            "timeout": 5,
+            "statusMessage": "rookery"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "http",
+            "url": "http://127.0.0.1:8787/hook",
+            "timeout": 5,
+            "statusMessage": "rookery"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "http",
+            "url": "http://127.0.0.1:8787/hook",
+            "timeout": 5,
+            "statusMessage": "rookery"
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "matcher": "permission_prompt|idle_prompt|agent_needs_input",
+        "hooks": [
+          {
+            "type": "http",
+            "url": "http://127.0.0.1:8787/hook",
+            "timeout": 5,
+            "statusMessage": "rookery"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "http",
+            "url": "http://127.0.0.1:8787/hook",
+            "timeout": 5,
+            "statusMessage": "rookery"
+          }
+        ]
+      }
+    ],
+    "StopFailure": [
+      {
+        "matcher": "rate_limit|overloaded|authentication_failed|billing_error|invalid_request|server_error|unknown",
+        "hooks": [
+          {
+            "type": "http",
+            "url": "http://127.0.0.1:8787/hook",
+            "timeout": 5,
+            "statusMessage": "rookery"
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "matcher": "clear|resume|logout|prompt_input_exit|other",
+        "hooks": [
+          {
+            "type": "http",
+            "url": "http://127.0.0.1:8787/hook",
+            "timeout": 1,
+            "statusMessage": "rookery"
+          }
+        ]
+      }
+    ]
+  }
+}

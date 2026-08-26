@@ -1,0 +1,16 @@
+[project]
+name = "rookery"
+version = "0.2.0"
+description = "A USB status light for Claude Code and other coding-agent sessions"
+requires-python = ">=3.10"
+dependencies = ["pyserial>=3.5"]
+
+[project.scripts]
+rookery = "rookery.__main__:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["rookery"]

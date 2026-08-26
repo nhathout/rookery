@@ -1,0 +1,138 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear|fork",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3",
+            "args": [
+              "~/.claude/hooks/rookery_hook.py"
+            ],
+            "async": true,
+            "timeout": 5,
+            "statusMessage": "rookery"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3",
+            "args": [
+              "~/.claude/hooks/rookery_hook.py"
+            ],
+            "async": true,
+            "timeout": 5,
+            "statusMessage": "rookery"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3",
+            "args": [
+              "~/.claude/hooks/rookery_hook.py"
+            ],
+            "async": true,
+            "timeout": 5,
+            "statusMessage": "rookery"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3",
+            "args": [
+              "~/.claude/hooks/rookery_hook.py"
+            ],
+            "async": true,
+            "timeout": 5,
+            "statusMessage": "rookery"
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "matcher": "permission_prompt|idle_prompt|agent_needs_input",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3",
+            "args": [
+              "~/.claude/hooks/rookery_hook.py"
+            ],
+            "async": true,
+            "timeout": 5,
+            "statusMessage": "rookery"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3",
+            "args": [
+              "~/.claude/hooks/rookery_hook.py"
+            ],
+            "async": true,
+            "timeout": 5,
+            "statusMessage": "rookery"
+          }
+        ]
+      }
+    ],
+    "StopFailure": [
+      {
+        "matcher": "rate_limit|overloaded|authentication_failed|billing_error|invalid_request|server_error|unknown",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3",
+            "args": [
+              "~/.claude/hooks/rookery_hook.py"
+            ],
+            "async": true,
+            "timeout": 5,
+            "statusMessage": "rookery"
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "matcher": "clear|resume|logout|prompt_input_exit|other",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3",
+            "args": [
+              "~/.claude/hooks/rookery_hook.py"
+            ],
+            "async": true,
+            "timeout": 1,
+            "statusMessage": "rookery"
+          }
+        ]
+      }
+    ]
+  }
+}

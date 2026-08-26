@@ -1,0 +1,27 @@
+# systemd *user* unit -- runs as you, so it inherits your dialout group.
+#
+#   mkdir -p ~/.config/systemd/user
+#   cp scripts/rookery.service ~/.config/systemd/user/
+#   # edit ExecStart below to your actual path
+#   systemctl --user daemon-reload
+#   systemctl --user enable --now rookery
+#   journalctl --user -u rookery -f
+#
+# So it survives logout / starts at boot:
+#   sudo loginctl enable-linger $USER
+
+[Unit]
+Description=rookery status light daemon
+After=default.target
+
+[Service]
+Type=simple
+ExecStart=%h/.local/bin/rookery run
+Restart=always
+RestartSec=3
+# The daemon tolerates the device being absent, so don't fail on unplug.
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=default.target
