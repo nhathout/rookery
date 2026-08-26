@@ -16,18 +16,18 @@ one Bambu A1 mini, and hand assembly.
 | ESP32-S3 DevKitC-1 | 1 | $9.00 | $5.50 |
 | LEDs, 5 mm, six colours | 6 | $0.40 | $0.15 |
 | Resistors | 6 | $0.06 | $0.02 |
-| M3 heat-set inserts | 6 | $0.36 | $0.12 |
-| M3 × 1/4" screws | 6 | $0.12 | $0.04 |
+| M3 heat-set inserts | 4 | $0.24 | $0.08 |
+| M3 × 1/4" screws | 4 | $0.08 | $0.03 |
 | Hookup wire, zip tie | — | $0.25 | $0.10 |
 | Rubber feet | 4 | $0.20 | $0.08 |
 | USB-A/C data cable, 1 m | 1 | $2.50 | $1.10 |
-| Filament — 95 g black | — | $1.90 | $1.60 |
-| Filament — 25 g white | — | $0.50 | $0.42 |
+| Filament — 83 g black | — | $1.66 | $1.40 |
+| Filament — 56 g white | — | $1.12 | $0.94 |
 | Box, insert, printed card | — | — | $2.20 |
-| **Materials** | | **$15.29** | **$11.33** |
+| **Materials** | | **$16.05** | **$11.83** |
 
-**Machine time.** About 12 hours across four plates, or roughly one unit per
-A1 mini per day allowing for plate changes. That is not labour, but it is
+**Machine time.** About 11 hours across two plates, or roughly one unit per
+A1 mini per day allowing for the filament change. That is not labour, but it is
 capital and floor space: **one printer supports about 20 units a month.** Any
 real volume means more printers, and printers are the cheapest thing on this
 list to add.
@@ -36,15 +36,15 @@ list to add.
 
 | Step | Time |
 |---|---|
-| Six heat-set inserts | 3 min |
-| Sand six LEDs, load the nest | 4 min |
+| Four heat-set inserts | 2 min |
+| Sand six LEDs, load the shelf | 4 min |
 | Solder the ground bus and six resistors | 14 min |
 | Solder seven wires to the board | 8 min |
-| Fit board, belly, eyes, close up | 6 min |
+| Clip board in, eyes, beak, close up | 5 min |
 | Flash, run `rookery test`, pack | 7 min |
-| **Total** | **~42 min** |
+| **Total** | **~40 min** |
 
-At $25/hour that is **$17.50 a unit**, more than the materials. Add a
+At $25/hour that is **$16.70 a unit**, more than the materials. Add a
 plausible 8% for scrap and rework and one unit lands at roughly **$30 all-in
 at 100 units**.
 
@@ -57,7 +57,7 @@ politely.
 
 ## The one change that matters
 
-**Thirty of those forty-two minutes are the LED loom.** Six LEDs, six
+**Twenty-six of those forty minutes are the LED loom.** Six LEDs, six
 resistors, a hand-twisted ground bus and thirteen solder joints, done by a
 person, every single time. It is also where every unit-to-unit inconsistency
 comes from: six LEDs from a parts drawer are never balanced, which is exactly
@@ -72,7 +72,7 @@ The firmware already supports this. `-DLED_BACKEND_NEOPIXEL` is in
 
 A 12-LED WS2812B ring module is about $1.50 and has **three wires**. No
 resistors, no ground bus, no per-colour trim, no thirteen joints. Assembly
-drops from 42 minutes to roughly **15**, and every unit comes out the same
+drops from 40 minutes to roughly **14**, and every unit comes out the same
 colour as every other unit because the colour is now a number in firmware
 rather than a property of whichever LEDs were in the bag.
 
@@ -80,22 +80,22 @@ rather than a property of whichever LEDs were in the bag.
 |---|---|---|
 | Parts | 12 | 1 |
 | Solder joints | 13 | 3 |
-| Assembly | 42 min | ~15 min |
-| Labour @ $25/h | $17.50 | $6.25 |
+| Assembly | 40 min | ~14 min |
+| Labour @ $25/h | $16.70 | $5.80 |
 | BOM change | — | +$1.35, −$0.17 |
 | Colour consistency | trim each unit | identical |
 
 That is **$10 a unit** for a $1.35 part, and it pays back on the first one.
 
-The nest needs a ring seat instead of six bores:
+The chassis's LED shelf takes a ring seat instead of six bores:
 
 ```bash
 python3 generate.py --leds ring --ring-od 37 --ring-id 23
 ```
 
 Measure your ring — 12-LED rings are commonly 37 mm across but not
-universally. The generator checks the seat against the reflector cone and the
-board and fails if it doesn't fit.
+universally. The generator checks the seat against the
+chassis walls and the board and fails if it doesn't fit.
 
 The one thing you give up is the constraint that made this design what it is:
 one colour at a time, at a few milliamps, off a USB port with no capacitor.
@@ -107,8 +107,8 @@ that is a non-issue, but it is a real change to the power story — see
 
 A 40 × 40 mm two-layer board carrying six LEDs, six resistors and one header,
 assembled by the fab: roughly $1.50 in boards plus $2–3 in assembly at 50
-units, with a one-off setup of about $30–60. Snaps onto the nest's two screw
-posts, one connector to the dev board.
+units, with a one-off setup of about $30–60. Sits where the LED shelf is,
+one connector to the dev board.
 
 It keeps the discrete-LED design exactly as it is — the low current, the one
 lit at a time, the honest little indicator — and removes the same 25 minutes.
@@ -124,16 +124,15 @@ cost of needing to care about USB, regulation and certification yourself.
 
 ## What ships in the box
 
-- Assembled penguin, one belly fitted
-- The other three bellies, loose — they are the demo, and they cost 40 g of
-  filament and no labour
+- Assembled penguin
 - USB data cable
 - Four rubber feet
 - A card with the one-line install and a link
 
-The bellies matter more than they look like they do. They are the thing
-someone shows a colleague, they cost almost nothing, and they turn "a light"
-into "a light that's mine".
+One thing worth considering in the box: a **spare beak in orange**. It is a
+single 8 mm cube, it costs a gram of filament and no labour, and it is the
+one thing a buyer can change about how the penguin looks without touching a
+screwdriver.
 
 ---
 
@@ -168,21 +167,21 @@ minutes instead of twenty. Bump it on every change that ships.
 
 **Print consistency.** Colour lots vary, and the belly is a diffuser: a
 "white" from a different batch changes how the finished thing looks. Buy the
-white in quantity from one lot and keep a printed reference belly to compare
-against.
+white in quantity from one lot and keep a printed reference chassis to
+compare against.
 
 ---
 
 ## What this is worth as a product
 
 Honestly: the enclosure is the product. The firmware and daemon are a
-weekend; the thing that makes someone want one is that it is a penguin whose
-belly glows, that it comes with four faces, and that swapping one takes four
-screws and no soldering.
+weekend; the thing that makes someone want one is that it is a pixel penguin
+whose whole front is a glowing panel, and that you can read it from across
+the room.
 
 Which is also the risk. Anyone can print the enclosure — the meshes are MIT
 and committed. What is actually being sold is *not having to*: the print
-time, the 42 minutes of soldering, the sourcing, the tested unit, the cable
+time, the 40 minutes of soldering, the sourcing, the tested unit, the cable
 that works. Price it as assembly and support, not as a design people cannot
 get, because they can.
 

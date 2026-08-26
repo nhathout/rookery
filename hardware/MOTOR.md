@@ -1,7 +1,7 @@
 # Power budget & adding a motor
 
 > **The shipped enclosure has no servo mount.** The current design is
-> deliberately static — shell, backplate, nest, eyes, belly. This document
+> deliberately static — body, chassis, back, eyes, beak. This document
 > stays because the power arithmetic matters for any expansion, and because
 > the firmware still carries optional servo support if you want to add a
 > moving part of your own.
@@ -128,11 +128,12 @@ Get the horn position roughly right *mechanically* before fine-tuning in
 software: pull the horn off the spline, centre the servo with `WAG`, and press
 the horn back on pointing where you want.
 
-You'll need to make room for it yourself — add a pocket to `build_backplate()`
-in `generate.py`, or mount the servo outside the shell. There is room: the
-cavity is 46 mm deep and the dev board only uses the bottom 13 mm of it. The
-interference check in `generate.py` will tell you straight away if whatever
-you add collides with the nest, the belly, or the board.
+You'll need to make room for it yourself — add a pocket to `build_back()` in
+`generate.py`, or mount the servo outside the body. There is room: the body
+is 48 mm deep, the chassis only uses the front 34 mm of that, and the 14 mm
+behind it is empty on purpose. The interference check in `generate.py` will
+tell you straight away if whatever you add collides with the chassis or the
+board.
 
 ## What the firmware does with a servo
 

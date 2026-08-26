@@ -103,42 +103,49 @@ That's a separate document, because it's a separate job:
 **[`stl/README.md`](stl/README.md)** covers what to print, in which filament,
 on which plate, and in what order to bolt it together.
 
-The short version: five printed parts, six M3 heat-set inserts, and six
-M3 × 1/4" screws that are all the same screw. The LEDs live in the `nest`, a
-white reflector cone that bolts to the backplate and lights the penguin's
-belly from behind.
+The short version: five printed parts, four M3 heat-set inserts, and four
+M3 × 1/4" screws that are all the same screw. Everything electrical mounts
+inside the `chassis` — the white box whose front face is the penguin's belly
+— so the whole loom is built on one part, on the bench, and drops into the
+body in a single move.
 
 ## Where the LEDs sit
 
 ```
-        back                                              front
-      y = 0                y = 22..25                   y = 46
-        |                       |                          |
-   [ backplate ]           [ nest plate ]            [ belly ]
-        |    \__ post __/        | 6 LEDs                 |
-   [ dev board ]                 \____ reflector cone ____/
-                                        flares to 48 mm
+       back                                                  front
+     y = 0            y = 14       y = 30..33              y = 48
+       |                |              |                      |
+  [ back cover ]   [ chassis rear ] [ LED shelf ]        [ belly face ]
+       |                               | 6 LEDs               |
+       |                          [ dev board ]     40 x 64 mm of glow
+       |                          on posts behind
+       |                          the shelf
 ```
 
-Six LEDs in a 15 mm circle, 18 mm behind a 48 × 54 mm window, one lit at a
-time. Three things stop that reading as a bright spot with a dim rim:
+Six LEDs in a 17 mm circle, 9.4 mm behind a 40 × 64 mm panel, one lit at a
+time. Three things stop that reading as six bright spots:
 
-1. **The cone.** It flares from the LED plate out to the full width of the
-   window, in white filament, and bounces the spill into the edges.
-2. **The lens boss** on the back of the belly: a faceted cone of extra
-   material right where the beam is strongest, tapering to nothing at the
-   rim. Thicker plastic in the middle, thinner at the edge, so what comes
-   out the front is even.
+1. **The box.** The chassis is white on all six inside faces, so the light
+   chamber is its own diffuser: what does not go straight out the front
+   bounces around until it does.
+2. **The pixel grid.** The same 8 mm grid as the body is engraved 0.6 mm
+   into the belly face, which breaks the panel into 5 × 8 lit squares. It
+   hides the fall-off between LEDs by giving the eye something deliberate to
+   read instead.
 3. **Sanding the LEDs.** Rub the dome of each one flat on 400-grit until
    it's frosted. A clear 5 mm LED throws a ~20° beam; a frosted one
    scatters far wider. Two minutes, no cost, and it makes more difference
    than either of the other two.
 
-There's a deliberate gap in the crown of the cone. Spill light goes up
-through the body and reaches the two translucent eye plugs, which glow
-faintly in whatever colour is currently showing. It's subtle — best in a
-dim room — and it's a bonus rather than a feature. Printing the eyes in
-natural or clear filament rather than white makes it noticeably stronger.
+The LEDs go in from the back, dome first: the little flange at the base of a
+5 mm LED catches on the shelf and sets the height for you, and nothing
+protrudes behind it to foul the dev board 3.5 mm further back.
+
+The head is part of the same cavity, so spill light reaches the two
+translucent eye plugs and they glow faintly in whatever colour is currently
+showing. It's subtle — best in a dim room — and it's a bonus rather than a
+feature. Printing the eyes in natural or clear filament rather than white
+makes it noticeably stronger.
 
 ## Bill of materials
 
@@ -147,14 +154,14 @@ natural or clear filament rather than white makes it noticeably stronger.
 | ESP32-S3 dev board | 1 | Classic ESP32, C3 and C6 also supported |
 | LEDs — red, green, blue, yellow, orange, white | 1 each | 5 mm (or 3 mm, see `--led-d`) |
 | Resistors, 100–330 Ω | 6 | Values per the table above |
-| M3 heat-set inserts | 6 | 4.0 mm OD × 5 mm long |
-| M3 × 1/4" screws | 6 | PC case screws — e.g. Micro Connectors `SCW-50M3`. M3 × 6 mm pan head is the same thing. |
+| M3 heat-set inserts | 4 | 4.0 mm OD × 5 mm long |
+| M3 × 1/4" screws | 4 | PC case screws — e.g. Micro Connectors `SCW-50M3`. M3 × 6 mm pan head is the same thing. |
 | Hookup wire | — | Stranded, 26–28 AWG |
 | **USB cable that carries data** | 1 | Not a charge-only cable |
 | Zip tie, small | 1 | Strain relief on the cable |
-| Black filament | ~95 g | Shell and backplate |
-| White or natural filament | ~25 g | Nest, eyes, and one belly |
-| *Optional:* rubber feet, 11 mm | 4 | Recesses are in the base |
+| Black filament | ~83 g | Body, back cover, beak |
+| White or natural filament | ~56 g | Chassis and eyes |
+| *Optional:* rubber feet | 4 | |
 
 The thing that still trips people up: **the cable**. Plenty of USB cables in
 a drawer are power-only with no data lines. If the board never shows up in
