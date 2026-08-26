@@ -1,10 +1,10 @@
 # Power budget & adding a motor
 
 > **The shipped enclosure has no servo mount.** The current design is
-> deliberately static — case, lid, LED holder, plaque. This document stays
-> because the power arithmetic matters for any expansion, and because the
-> firmware still carries optional servo support if you want to add a moving
-> part of your own.
+> deliberately static — shell, backplate, nest, eyes, belly. This document
+> stays because the power arithmetic matters for any expansion, and because
+> the firmware still carries optional servo support if you want to add a
+> moving part of your own.
 
 ## Short answer
 
@@ -128,8 +128,11 @@ Get the horn position roughly right *mechanically* before fine-tuning in
 software: pull the horn off the spline, centre the servo with `WAG`, and press
 the horn back on pointing where you want.
 
-You'll need to make room for it yourself — add a pocket to `build_case()` in
-`generate.py`, or mount the servo outside the case.
+You'll need to make room for it yourself — add a pocket to `build_backplate()`
+in `generate.py`, or mount the servo outside the shell. There is room: the
+cavity is 46 mm deep and the dev board only uses the bottom 13 mm of it. The
+interference check in `generate.py` will tell you straight away if whatever
+you add collides with the nest, the belly, or the board.
 
 ## What the firmware does with a servo
 

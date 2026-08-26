@@ -31,9 +31,14 @@ it's running on.
 Sessions are tracked individually and the most urgent one wins, so five
 terminals and three worktrees still collapse into one colour.
 
-The six LEDs sit in a cluster behind a **swappable backlit plaque** — a smiley,
-a penguin, a word, or your own design. The plaque's glyph is thinned to 0.8 mm
-so it glows while the rest of the panel stays opaque.
+The enclosure is a **penguin**, 91 × 55 × 117 mm, in two colours: a black
+shell and a **white belly that the LEDs light from behind**. The belly is a
+swappable panel — a smiley, a chick, a word, or your own — and it's the only
+part you ever need to take out. Its glyph is thinned to 0.9 mm so it glows
+while the rest of the panel stays opaque.
+
+The eyes are translucent plugs that pick up spill light from inside, so they
+glow faintly in whatever colour is currently showing.
 
 ---
 
@@ -46,12 +51,16 @@ If you own a 3D printer and a parts drawer, you probably have all of this.
 | ESP32-S3 dev board | 1 | Classic ESP32, C3 and C6 also supported |
 | LEDs — red, green, blue, yellow, orange, white | 1 each | 3 mm or 5 mm through-hole |
 | Resistors, 100–330 Ω | 6 | Values vary by colour — see [WIRING.md](hardware/WIRING.md) |
-| M3 heat-set inserts | 6 | 3 mm long, ~4.0 mm OD |
-| M3 × 8 mm screws | 4 | Lid |
-| M3 × 6 mm screws | 2 | LED holder |
+| M3 heat-set inserts | 6 | 4.0 mm OD, 5 mm long |
+| M3 × 1/4" screws | 6 | Standard PC case screws — Micro Connectors `SCW-50M3` or any M3 × 6 mm pan head |
 | **USB cable that carries data** | 1 | Not a charge-only cable |
-| White or natural PLA | — | For the plaque |
+| Zip tie, small | 1 | Strain relief on the cable |
+| Black filament | ~95 g | Shell and backplate |
+| White or natural filament | ~25 g | Nest, eyes, and one belly |
 | *Optional:* rubber feet, 11 mm | 4 | Recesses are in the base |
+
+Every screw in the build is the same one: **M3 × 1/4"**, six of them, into six
+M3 heat-set inserts. There is nothing else to source.
 
 Only one LED is ever lit at a time, so there's no capacitor, no level shifter
 and no external power supply. The whole thing runs off the USB port that's
@@ -135,27 +144,41 @@ macOS: [`scripts/com.rookery.daemon.plist`](scripts/com.rookery.daemon.plist).
 
 ### 5. Print the enclosure
 
-**The meshes are committed — you don't need to run anything.** Open
-[`hardware/stl/rookery.3mf`](hardware/stl/rookery.3mf) in Bambu Studio and
-every part arrives pre-arranged on a 256 × 256 plate. Individual STLs are in
-the same folder if you'd rather import them one at a time.
+**The meshes are committed — you don't need to run anything.** The `.3mf`
+files in [`hardware/stl/`](hardware/stl/) are pre-arranged plates: open one in
+Bambu Studio and every part arrives laid out and correctly oriented.
 
-Four printed parts: `case`, `lid`, `holder`, and one `plaque`.
+Five printed parts, in two colours:
 
-| Part | Material | Settings |
+| Part | Filament | What it is |
 |---|---|---|
-| `case` | Any opaque PLA/PETG | 3 walls, 15% infill, **no supports** |
-| `lid` | Same | 3 walls, 15% |
-| `holder` | Anything | 3 walls, 20% |
-| `plaque_*` | **White or natural PLA** | 3 walls, 15% |
+| `shell` | **Black** | The body — head, flippers, beak, belly window, eye sockets |
+| `backplate` | **Black** | Rear panel; the board and the nest mount on it |
+| `nest` | **White** | Holds the six LEDs and reflects their light into the belly |
+| `eyes` | **White / natural** | Two plugs on a bridge |
+| `belly_*` | **White / natural** | The diffuser. Pick one — this is the swappable bit. |
 
-Everything is pre-oriented — **don't rotate anything**. The lid and plaques are
-already flipped so their visible faces print against the build plate, and the
-plaque's thin glow layer goes down first with no bridging.
+Plates are grouped by filament colour, so a single-extruder machine never
+needs a mid-print swap:
 
-**The plaque must be white or natural PLA.** Its glyph is 0.8 mm thick while
-the surrounding panel is 2.6 mm, so light passes through the glyph and not the
-frame. A dark filament gives you a dim brown rectangle.
+| Plate | Filament | Parts |
+|---|---|---|
+| `plate1_black.3mf` | Black | `shell` |
+| `plate2_black.3mf` | Black | `backplate` |
+| `plate3_white.3mf` | White | `nest`, `eyes`, `belly_blank`, `belly_smiley` |
+| `plate4_white.3mf` | White | `belly_chick`, `belly_text` |
+
+Everything fits a **Bambu A1 mini** (180 × 180 × 180). If you have a 256 mm
+machine, `python3 generate.py --plate 256` re-packs the set onto two plates.
+
+3 walls, 15–20% infill, 0.2 mm layers, and **no supports on any part** —
+nothing in the design overhangs past 45°, and `generate.py` measures that
+rather than assuming it.
+
+**The belly must be white or natural filament.** Its glyph is thinned to
+0.9 mm while the panel around it is 2.6 mm, so light passes through the glyph
+and not the frame. A dark filament gives you a dim brown oval. The `nest` is a
+reflector, so print that in white too.
 
 To change dimensions, edit the parameters at the top of
 [`hardware/generate.py`](hardware/generate.py) and re-run it:
@@ -165,36 +188,39 @@ pip install trimesh manifold3d shapely numpy
 cd hardware
 python3 generate.py                    # rewrites stl/
 python3 generate.py --insert-od 4.2    # if your inserts are fatter
-python3 generate.py --led-d 3.0        # 3mm LEDs instead of 5mm
-python3 generate.py --text "BUSY"      # your own plaque wording
+python3 generate.py --led-d 3.0        # 3 mm LEDs instead of 5 mm
+python3 generate.py --text "BUSY"      # your own wording
 ```
 
-Every part is checked for manifoldness before it's written, so a bad parameter
-fails loudly instead of at the printer.
+Every run checks itself: manifoldness after welding, plate fit, unsupported
+overhang area, bridge spans, screw thread engagement, and a boolean
+interference test of the assembled parts against each other and against a
+solid standing in for the dev board. A bad parameter fails loudly instead of
+at the printer.
 
-### 6. Plaques
+### 6. Bellies
 
 Four ship ready to print:
 
-| Plaque | What it shows |
+| Belly | What it shows |
 |---|---|
-| `plaque_smiley` | A smiley face — the most legible of the four |
-| `plaque_penguin` | A pixel penguin, for the name |
-| `plaque_text` | Reads `AFK`; change it with `--text` |
-| `plaque_blank` | Starting point for your own |
+| `belly_blank` | Plain glow — the whole oval lights up |
+| `belly_smiley` | A smiley face — the most legible of the four |
+| `belly_chick` | A pixel penguin chick, on a penguin's belly |
+| `belly_text` | Reads `AFK`; change it with `--text` |
 
-Swapping one is four lid screws.
+Swapping one is four screws, all on the back. The whole electrical assembly
+stays on the backplate as one piece — nothing gets unsoldered.
 
 If you design your own, keep the lit graphic **small and central**. The six
-LEDs sit in a 14 mm cluster about 10 mm below the plaque, so a compact centred
-icon lights evenly while text spanning the full window is noticeably brighter
-in the middle. That's why the shipped text plaque is three characters.
+LEDs sit in a 15 mm circle about 18 mm behind a 48 × 54 mm window, so a
+compact centred icon lights evenly while a graphic that reaches the rim falls
+off at the edges. The text belly uses a built-in 5 × 7 bitmap font covering
+A–Z, 0–9 and a few symbols, auto-scaled to fit.
 
-The text plaque uses a built-in 5 × 7 bitmap font covering A–Z, 0–9 and a few
-symbols, auto-scaled to fit the window.
-
-Full assembly walkthrough, including the heat-set insert technique:
-[`hardware/WIRING.md`](hardware/WIRING.md).
+Full print-and-assemble walkthrough, including the heat-set insert technique
+and the order to do things in: [`hardware/stl/README.md`](hardware/stl/README.md).
+Circuit and resistor values: [`hardware/WIRING.md`](hardware/WIRING.md).
 
 ---
 
@@ -241,12 +267,21 @@ forward voltage is nearly the full 3.3 V a GPIO can supply, so they only get
 about 2 mA where the others get 7. The firmware already compensates with higher
 PWM duty; [`hardware/WIRING.md`](hardware/WIRING.md) has two stronger fixes.
 
-**The plaque glows brightest in the middle** — expected. Six LEDs in a 14 mm
-cluster lighting a 44 mm window will always fall off toward the edges. Printing
-the case in white helps; so does keeping the graphic central.
+**The belly glows brightest in the middle** — six LEDs in a 15 mm circle
+lighting a 48 × 54 mm window will always fall off toward the edges. The
+reflector cone and the lens boss on the back of the belly are there to fight
+that, but the cheapest fix by far is to **sand the dome of each LED flat on
+400-grit** until it's frosted. That turns a ~20° beam into a wide scatter and
+does more than either of the other two.
 
-**Plaque is dim overall** — wrong filament. It needs white or natural PLA. Also
-check `BRIGHT` isn't turned down.
+**Belly is dim overall** — wrong filament. It needs white or natural PLA.
+Print the `nest` in white too; it's a reflector. Also check `BRIGHT` isn't
+turned down.
+
+**Eyes barely glow** — expected. They're lit by spill light through a gap in
+the crown of the reflector, so they're subtle by design and best seen in a dim
+room. Printing them in natural or clear filament rather than white helps a
+lot.
 
 **Hook errors in the transcript** — the daemon isn't running. HTTP hooks report
 a connection failure as a non-blocking error: visible, harmless, and it won't
@@ -281,10 +316,11 @@ firmware/         ESP32 firmware (PlatformIO)
 host/rookery/     the daemon: hook endpoint, session registry, serial link
 claude/           hook configuration for Claude Code
 hardware/
-  generate.py     parametric model generator -> STL + 3MF
-  stl/            printable meshes, including rookery.3mf
-  WIRING.md       circuit, resistors, assembly
+  generate.py     parametric model generator -> STL + per-colour 3MF plates
+  stl/            printable meshes, plates, and the assembly guide
+  WIRING.md       circuit, resistor values, where the LEDs sit
   MOTOR.md        power budget, and adding a motor
+  PRODUCTION.md   what it costs to build, and to sell
 scripts/          systemd unit, launchd plist, udev rules
 docs/             serial protocol reference
 ```
@@ -298,9 +334,10 @@ The idea of a physical desk light for agent sessions isn't mine — I saw
 would be more fun than buying it.
 
 This is an independent implementation: its own firmware, daemon and enclosure,
-six discrete LEDs instead of a diffused RGB beacon, a swappable backlit plaque
-that isn't in their product at all, and a hook-driven approach rather than
-session-file watching. If you'd rather have a finished product in a nice case than a weekend
+six discrete LEDs instead of a diffused RGB beacon, a penguin-shaped
+two-colour enclosure with a swappable backlit belly that isn't in their
+product at all, and a hook-driven approach rather than session-file
+watching. If you'd rather have a finished product in a nice case than a weekend
 of soldering, go buy theirs.
 
 Not affiliated with Anthropic, or with Claw Light.
