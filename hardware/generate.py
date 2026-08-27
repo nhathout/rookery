@@ -116,7 +116,7 @@ FOOT_OUT = 10.0                  # one voxel forward
 
 # -- chassis: the white box. CH_W/CH_H/CH_D are derived, further down.
 CH_WALL = 1.8
-CH_D = 39.0
+CH_D = 45.0
 GLYPH_FLOOR = 0.9                # material left where an optional glyph glows
 SMILEY_SCALE = 2.2               # the stock smiley was drawn for a smaller window
 
@@ -131,7 +131,7 @@ BOARD_CLEAR = 0.6
 BOARD_TALL = 8.0                 # tallest thing standing on it
 BOARD_POST_D = 6.0
 BOARD_RISE = 7.0                 # board centre, above the window centre
-BOARD_Y = 26.5                   # front face of the board, from the belly face
+BOARD_Y = 32.0                   # front face of the board, from the belly face
 
 # -- the USB plug. Nothing in the mesh represents it, so it is checked
 # explicitly: a plug that does not fit is a build you cannot finish.
@@ -142,10 +142,18 @@ LED_D = 5.0
 LED_CLEAR = 0.25
 LED_BODY = 8.6                   # 5 mm LED, dome tip to flange
 LED_CIRCLE_D = 17.0
+LED_LEAD = 4.0                   # straight lead behind the shelf before you
+                                 # bend them outward. Nothing may occupy it.
 LED_COUNT = 6
-SHELF_Y = 20.0                   # front face of the shelf, from the belly face
+SHELF_Y = 23.0                   # front face of the shelf, from the belly face
 SHELF_T = 3.0
 SHELF_GAP = 7.0                  # wire route past the shelf, one side
+SHELF_DROP = 1.75                # the shelf stops this far above the USB
+                                 # connector, so the plug has a clear run
+                                 # down past it and out through the floor
+MOUNT_DZ = (-17.0, 20.0)         # board posts and tabs, either side of the
+                                 # LED cluster. Nothing may stand in front
+                                 # of an LED.
 
 # -- alternative: one WS2812B ring instead of six discrete LEDs. The firmware
 # already has this backend (env:esp32s3-neopixel). Three wires instead of
@@ -512,6 +520,9 @@ CH_W = _WB[2] - _WB[0] + 2 * FLARE
 CH_H = _WB[3] - _WB[1]
 CH_CZ = (_WB[1] + _WB[3]) / 2
 BOARD_CZ = CH_CZ + BOARD_RISE
+# The LED cluster sits dead centre on the belly. It is a parameter because
+# it is the one thing worth nudging by eye once you have printed one.
+LED_CZ = CH_CZ
 
 
 def ch_rect(grow: float = 0.0) -> Polygon:
@@ -546,21 +557,29 @@ def build_chassis(face: str = "blank", text: str = "AFK"):
     y_flange = y_face - WALL            # where the flare starts
     y_back = y_face - CH_D
 
+    ob = ch_rect(FLARE).bounds                       # outer footprint
+    ib = (ob[0] + CH_WALL, ob[1] + CH_WALL, ob[2] - CH_WALL, ob[3] - CH_WALL)
+
     plug = yprism(ch_rect(), y_face, WALL)
     flare = yflare(ch_rect(), y_flange, FLARE)
     shell = yprism(ch_rect(FLARE), y_flange - FLARE,
                    (y_flange - FLARE) - y_back)
-    inner = yprism(ch_rect(FLARE - CH_WALL), y_flange - FLARE - CH_WALL,
+    # A real box: walls on all four sides, not just the two the flare
+    # happened to leave behind. The board and the plug get their own slots
+    # through the roof and the floor further down.
+    inner = yprism(sbox(*ib), y_flange - FLARE - CH_WALL,
                    (y_flange - FLARE) - y_back + 2.0)
 
     ch = diff(union(plug, flare, shell), inner)
 
-    # --- LED shelf, spanning the box. Anchored on all four walls; the wire
-    # gap down one side is how the loom gets past it.
-    shelf = diff(yprism(ch_rect(FLARE - CH_WALL), y_face - SHELF_Y, SHELF_T),
-                 yprism(sbox(CH_W / 2 - CH_WALL - SHELF_GAP, -500,
-                             CH_W / 2, 500), y_face - SHELF_Y + EPS,
-                        SHELF_T + 2 * EPS))
+    # --- LED shelf. Full width, wall to wall, and it stops short of the USB
+    # connector at the bottom so the plug has a clear run past it. The wire
+    # gap down one side is how the loom gets through.
+    z_conn = BOARD_CZ - BOARD_L / 2
+    shelf_rect = sbox(ob[0], z_conn + SHELF_DROP, ob[2], ob[3])
+    shelf = diff(yprism(shelf_rect, y_face - SHELF_Y, SHELF_T),
+                 yprism(sbox(ib[2] - SHELF_GAP, -500, ib[2], 500),
+                        y_face - SHELF_Y + EPS, SHELF_T + 2 * EPS))
     adds = [ch, shelf]
 
     # --- board posts, standing on the shelf so nothing crosses the light
@@ -572,13 +591,11 @@ def build_chassis(face: str = "blank", text: str = "AFK"):
     bw = BOARD_W + 2 * BOARD_CLEAR
     y_shelf_back = y_face - SHELF_Y - SHELF_T
     post_h = y_shelf_back - (y_face - BOARD_Y)
-    grip = 15.0
     y_board = y_face - BOARD_Y
     for sx in (-1, 1):
-        for sz in (-1, 1):
+        for dz in MOUNT_DZ:
             adds.append(ybore(BOARD_POST_D, post_h + OVERLAP,
-                              sx * (bw / 2 - 5.0), BOARD_CZ + sz * grip,
-                              y_board))
+                              sx * (bw / 2 - 5.0), CH_CZ + dz, y_board))
     # --- retention tabs. Each one is a column standing on the shelf just
     # outboard of the board, with a lip that reaches back over its edge:
     # press the board in and it clicks under. The column matters -- a lip
@@ -588,8 +605,8 @@ def build_chassis(face: str = "blank", text: str = "AFK"):
     tab_x = bw / 2 + tab_w / 2 + 0.3
     lip_in = bw / 2 - 1.6
     for sx in (-1, 1):
-        for sz in (-1, 1):
-            zc = BOARD_CZ + sz * grip - tab_z / 2
+        for dz in MOUNT_DZ:
+            zc = CH_CZ + dz - tab_z / 2
             adds.append(cube(tab_w, y_shelf_back - (y_board - 2.4), tab_z,
                              sx * tab_x,
                              (y_shelf_back + y_board - 2.4) / 2, zc))
@@ -602,17 +619,17 @@ def build_chassis(face: str = "blank", text: str = "AFK"):
     cuts = []
     if LEDS == "ring":
         depth = min(RING_T, SHELF_T - 1.2)
-        cuts.append(ybore(RING_OD + 2 * RING_CLEAR, depth + EPS, 0.0, CH_CZ,
+        cuts.append(ybore(RING_OD + 2 * RING_CLEAR, depth + EPS, 0.0, LED_CZ,
                           y_face - SHELF_Y - depth))
         cuts.append(ybore(12.0, SHELF_T + 2 * EPS, 0.0,
-                          CH_CZ - (RING_OD + RING_ID) / 4,
+                          LED_CZ - (RING_OD + RING_ID) / 4,
                           y_face - SHELF_Y - SHELF_T - EPS))
     else:
         for i in range(LED_COUNT):
             a = 2 * math.pi * i / LED_COUNT + math.pi / 6
             cuts.append(ybore(LED_D + 2 * LED_CLEAR, SHELF_T + 2 * EPS,
                               LED_CIRCLE_D / 2 * math.cos(a),
-                              CH_CZ + LED_CIRCLE_D / 2 * math.sin(a),
+                              LED_CZ + LED_CIRCLE_D / 2 * math.sin(a),
                               y_face - SHELF_Y - SHELF_T - EPS))
 
     # --- pass-throughs. The board is longer than the box, and its USB
@@ -620,11 +637,16 @@ def build_chassis(face: str = "blank", text: str = "AFK"):
     # the top of the board out into the head, and a slot in the floor lets
     # the plug down into the base. Without the second one you cannot plug
     # the thing in at all.
-    slot_w = BOARD_W + 2.0
-    cuts.append(cube(slot_w, CH_D, CH_WALL + 2 * EPS, 0.0,
-                     y_face - CH_D / 2, CH_CZ + CH_H / 2 - CH_WALL - EPS))
-    cuts.append(cube(max(PLUG_W + 2.0, 15.0), CH_D, CH_WALL + 2 * EPS, 0.0,
-                     y_face - CH_D / 2, CH_CZ - CH_H / 2 - EPS))
+    # Cut these from the REAL bounds, not from CH_H: the outer footprint is
+    # the window rect shrunk by the fit clearance, so a slot sized off the
+    # nominal height leaves a fifth-of-a-millimetre membrane across it --
+    # invisible in a render, and enough to stop a plug.
+    slot_y0, slot_y1 = y_back - 1.0, y_flange - FLARE
+    slot_d, slot_yc = slot_y1 - slot_y0, (slot_y0 + slot_y1) / 2
+    cuts.append(cube(BOARD_W + 2.0, slot_d, CH_WALL + 2 * EPS, 0.0,
+                     slot_yc, ib[3] - EPS))
+    cuts.append(cube(PLUG_W + 2.0, slot_d, CH_WALL + 2 * EPS, 0.0,
+                     slot_yc, ob[1] - EPS))
 
     # --- the same pixel grid as the body, carried across the belly. Cut
     # shallower here: the face is only WALL thick and it still has to be
@@ -1032,6 +1054,23 @@ def board_envelope():
                   DEPTH - BOARD_Y, 1.6 + BOARD_TALL)
 
 
+def led_envelope():
+    """The six LEDs, as solids: body through the shelf plus the length of
+    lead you need behind it to bend and solder.
+
+    Their holes are cut through the shelf, so this only ever finds something
+    that has been parked IN FRONT OF or BEHIND a hole -- a board post, a
+    retention tab, a wall. Which is exactly the mistake worth catching."""
+    d = LED_D + 2 * LED_CLEAR - 0.1
+    back = DEPTH - SHELF_Y - SHELF_T - LED_LEAD
+    return union(*[
+        ybore(d, LED_BODY + LED_LEAD + 3.0,
+              LED_CIRCLE_D / 2 * math.cos(2 * math.pi * i / LED_COUNT + math.pi / 6),
+              LED_CZ + LED_CIRCLE_D / 2 * math.sin(2 * math.pi * i / LED_COUNT + math.pi / 6),
+              back)
+        for i in range(LED_COUNT)])
+
+
 def plug_envelope():
     """The USB plug, as a solid, hanging off the bottom of the board.
 
@@ -1047,11 +1086,13 @@ def interference(parts):
     """Boolean-intersect the assembled parts. Anything above a rounding
     error is two pieces of plastic trying to occupy the same place."""
     print("\nFIT -- assembled interference (cm3)")
-    parts = dict(parts, board=board_envelope(), plug=plug_envelope())
+    parts = dict(parts, board=board_envelope(), plug=plug_envelope(),
+                 leds=led_envelope())
     pairs = [("body", "back"), ("body", "chassis"), ("body", "eyes"),
              ("body", "beak"), ("back", "chassis"), ("chassis", "eyes"),
              ("board", "body"), ("board", "chassis"), ("board", "back"),
-             ("plug", "body"), ("plug", "chassis"), ("plug", "back")]
+             ("plug", "body"), ("plug", "chassis"), ("plug", "back"),
+             ("leds", "chassis"), ("leds", "board"), ("leds", "plug")]
     ok = True
     for a, b in pairs:
         if a not in parts or b not in parts:
@@ -1070,8 +1111,9 @@ def interference(parts):
 def max_bridge() -> float:
     """Widest unsupported span in the chassis's LED shelf: it is the only
     ceiling in the build, and a bridge is judged on span, not area."""
-    region = ch_rect(FLARE - CH_WALL).difference(
-        sbox(CH_W / 2 - CH_WALL - SHELF_GAP, -500, CH_W / 2, 500))
+    ob = ch_rect(FLARE).bounds
+    ib = (ob[0] + CH_WALL, ob[1] + CH_WALL, ob[2] - CH_WALL, ob[3] - CH_WALL)
+    region = sbox(ib[0], BOARD_CZ - BOARD_L / 2 + SHELF_DROP, ib[2], ib[3])         .difference(sbox(ib[2] - SHELF_GAP, -500, ib[2], 500))
     lo, hi = 0.0, 60.0
     for _ in range(24):
         mid = 0.5 * (lo + hi)

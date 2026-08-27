@@ -22,9 +22,9 @@ one Bambu A1 mini, and hand assembly.
 | Rubber feet | 4 | $0.20 | $0.08 |
 | USB-A/C data cable, 1 m | 1 | $2.50 | $1.10 |
 | Filament — 105 g black | — | $2.10 | $1.76 |
-| Filament — 44 g white | — | $0.88 | $0.74 |
+| Filament — 48 g white | — | $0.96 | $0.81 |
 | Box, insert, printed card | — | — | $2.20 |
-| **Materials** | | **$16.25** | **$11.95** |
+| **Materials** | | **$16.33** | **$12.02** |
 
 **Machine time.** About 12 hours across two plates, or roughly one unit per
 A1 mini per day allowing for the filament change. That is not labour, but it is

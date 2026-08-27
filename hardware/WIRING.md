@@ -112,17 +112,20 @@ body in a single move.
 ## Where the LEDs sit
 
 ```
-       back                                                  front
-     y = 0            y = 14       y = 30..33              y = 48
-       |                |              |                      |
-  [ back cover ]   [ chassis rear ] [ LED shelf ]        [ belly face ]
-       |                               | 6 LEDs               |
-       |                          [ dev board ]     40 x 64 mm of glow
-       |                          on posts behind
-       |                          the shelf
+     back                                                      front
+   y = 0        y = 5      y = 16..18   y = 24..27          y = 50
+     |            |            |            |                  |
+[ back cover ][ chassis ][ dev board ][ LED shelf ]     [ belly face ]
+     |          rear rim    upright      6 LEDs          40 x 60 mm
+     |                      on posts     dome forward     of glow
+     |                                   17.4 mm of throw
+     |
+     |     the board is longer than the box is tall: its top leaves
+     |     through a slot in the roof, and the USB plug drops out
+     |     through a slot in the floor into the base of the penguin
 ```
 
-Six LEDs in a 17 mm circle, 14.4 mm behind a 40 × 60 mm panel, one lit at a
+Six LEDs in a 17 mm circle, 17.4 mm behind a 40 × 60 mm panel, one lit at a
 time. Three things stop that reading as six bright spots:
 
 1. **The box.** The chassis is white on all six inside faces, so the light
@@ -139,7 +142,14 @@ time. Three things stop that reading as six bright spots:
 
 The LEDs go in from the back, dome first: the little flange at the base of a
 5 mm LED catches on the shelf and sets the height for you, and nothing
-protrudes behind it to foul the dev board 3.5 mm further back.
+protrudes behind it to foul the dev board 6 mm further back. There is 4 mm
+of straight lead behind the shelf before you bend them outward into the
+channels either side, and the resistors live in those channels — 8.8 mm
+wide, 19 mm deep, the full height of the box.
+
+Nothing stands in front of an LED. That is checked, not assumed: the six
+LEDs are modelled as solids and boolean-tested against the chassis, the
+board and the plug on every run.
 
 The head is part of the same cavity, so spill light reaches the two
 translucent eye plugs and they glow faintly in whatever colour is currently
@@ -160,7 +170,7 @@ makes it noticeably stronger.
 | **USB cable that carries data** | 1 | Not a charge-only cable |
 | Zip tie, small | 1 | Strain relief on the cable |
 | Black filament | ~105 g | Body, back cover, beak |
-| White or natural filament | ~44 g | Chassis and eyes |
+| White or natural filament | ~48 g | Chassis and eyes |
 | *Optional:* rubber feet | 4 | |
 
 The thing that still trips people up: **the cable**. Plenty of USB cables in

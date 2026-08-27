@@ -60,7 +60,7 @@ If you own a 3D printer and a parts drawer, you probably have all of this.
 | **USB cable that carries data** | 1 | Not a charge-only cable |
 | Zip tie, small | 1 | Strain relief on the cable |
 | Black filament | ~105 g | Body, back cover, beak |
-| White or natural filament | ~44 g | Chassis and eyes |
+| White or natural filament | ~48 g | Chassis and eyes |
 | *Optional:* rubber feet, 11 mm | 4 | Recesses are in the base |
 
 Every screw in the build is the same one: **M3 × 1/4"**, four of them, into
@@ -272,7 +272,7 @@ forward voltage is nearly the full 3.3 V a GPIO can supply, so they only get
 about 2 mA where the others get 7. The firmware already compensates with higher
 PWM duty; [`hardware/WIRING.md`](hardware/WIRING.md) has two stronger fixes.
 
-**The belly is patchy rather than even** — six LEDs 14.4 mm behind a
+**The belly is patchy rather than even** — six LEDs 17.4 mm behind a
 40 × 60 mm panel will show where they are. The white chamber and the engraved
 pixel grid are there to fight that, but the cheapest fix by far is to **sand
 the dome of each LED flat on 400-grit** until it's frosted. That turns a ~20°

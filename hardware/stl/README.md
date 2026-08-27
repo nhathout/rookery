@@ -60,7 +60,7 @@ an overhang, and 37 mm bridges print clean.
 Print the `eyes` in natural or clear if you have it — they pick up spill
 light from inside and glow faintly.
 
-**Filament:** about 105 g black and 44 g white for one complete penguin.
+**Filament:** about 105 g black and 48 g white for one complete penguin.
 
 ---
 
@@ -83,6 +83,32 @@ captured between the window it sits in and the cover's pillars. The eyes and
 the beak are press fits.
 
 ---
+
+## Where the hardware goes, and why there are only four inserts
+
+| | |
+|---|---|
+| **6 LEDs** | In the shelf, halfway down the chassis. Flanges rest on its back face; 4 mm of straight lead behind that before you bend them. |
+| **6 resistors + the loom** | The two channels beside the board: 8.8 mm wide, 19 mm deep, full height of the box. |
+| **Dev board** | Upright on four posts, under four snap tabs. Longer than the box is tall — its top goes out through the roof slot. |
+| **USB plug** | Straight down out of the connector, past the shelf, through the floor slot, into the base of the penguin. 22.9 mm of clear drop. |
+| **Anything you add later** | The base cavity (~55 × 18 × 48 mm, less the plug) and the head cavity (~55 × 38 × 48 mm, less the top of the board). Both are empty and reachable with the cover off. |
+
+**Only the body takes heat-set inserts — four of them, for the back cover.**
+Nothing else in the build needs one:
+
+- The **chassis** is captured, not bolted. It cannot go forward through the
+  window (its flare is wider than the opening), the pocket locates it
+  sideways, and four pillars on the back cover press it home from behind.
+  Screwing it as well would need a longer screw than the one screw this
+  build uses, for no gain.
+- The **board** is held by printed posts and snap tabs. An
+  ESP32-S3-DevKitC-1 has no mounting holes to screw through in the first
+  place.
+- The **eyes** and the **beak** are press fits.
+
+If your chassis ever feels loose, the thing to adjust is `WINDOW_CLEAR`, not
+to add screws.
 
 ## Assembly
 
@@ -120,39 +146,47 @@ measure differently, `python3 generate.py --insert-od 4.2` and reprint.
 
 ### 2. Load the LEDs into the chassis
 
-Six holes in the shelf, a third of the way down the box. Push each LED in
-**from the open back, dome first**, until the little flange at its base
-catches on the shelf. That sets the height for you: the domes end up 14.4 mm
-from the inside of the belly, and nothing sticks out the back to foul the
-board.
+Six holes in the shelf, which sits about halfway down the box with **nothing
+in front of it**. Push each LED in **from the open back, dome first**, until
+the little flange at its base catches on the shelf. That sets the height for
+you: the domes end up 17.4 mm behind the outside of the belly, and nothing
+protrudes backward to foul anything.
 
 Keep the colour order consistent so you can trace the loom later.
 
 > **Worth doing:** rub the dome of each LED flat on 400-grit sandpaper until
 > it's frosted. A clear 5 mm LED throws a narrow ~20° beam and puts a bright
 > spot in the middle of the belly; a sanded one scatters across a much wider
-> angle and lights the whole panel evenly. Two minutes, no cost, and it is
-> the single biggest improvement you can make to how this looks.
+> angle and lights the whole panel. Two minutes, no cost, and it is the
+> single biggest improvement you can make to how this looks — more than the
+> white chamber and the pixel grid put together.
 
-Bend all six cathodes together into a ring under the shelf and solder —
-that's your ground bus. Solder each anode to its resistor, then a wire from
-each resistor back toward the board. **Leave the wires long.** The gap down
-one side of the shelf is the route for them.
+There is **4 mm of straight lead** behind the shelf before anything else is
+in the way, then bend them outward into the channels down either side. Bend
+all six cathodes together into a ring and solder — that's your ground bus.
+Solder each anode to its resistor, then a wire from each resistor back
+toward the board.
+
+**The resistors and the loom live in the two channels beside the board:**
+8.8 mm wide, 19 mm deep, running the full height of the box. Six axial
+resistors and thirteen joints fit there without being squeezed. The gap down
+one side of the shelf is the route through it. **Leave the wires long.**
 
 ### 3. Clip the dev board in
 
-Four posts stand on the back of the shelf. Press the board down onto them
-and it clicks under four retention tabs — columns just outboard of the
-board with a lip that reaches back over its edge. It sits **upright, USB
-connector pointing down**, with 3.5 mm of clearance in front of it for the
-LED tails.
+Four posts stand on the shelf — two low, two high, deliberately clear of the
+LED circle so nothing is ever parked in front of a hole. Press the board
+down onto them and it clicks under four retention tabs: columns just
+outboard of the board with a lip that reaches back over its edge.
 
-The board is **longer than the box is tall**, on purpose. Its top passes out
-through a slot in the chassis roof into the head, and its USB connector sits
-low enough that a plug has **22.9 mm of clear drop** below it — enough for a
-normal straight USB-C plug, which a box sized to the window could never have
-given you. A second slot in the chassis floor is what the plug passes
-through.
+It sits **upright, USB connector pointing down**. Three things about that:
+
+- The board is **longer than the box is tall**, on purpose. Its top passes
+  out through a slot in the chassis roof into the head.
+- Its connector sits low enough that a plug has **22.9 mm of clear drop**
+  below it. The shelf stops short above the connector and a slot in the
+  chassis floor lets the plug through into the base of the penguin.
+- There is **6 mm** between the board and the back of the LED shelf.
 
 Solder the LED loom to the board per the channel map in
 [`../WIRING.md`](../WIRING.md).
@@ -212,7 +246,7 @@ than the panel around it.
 it carries the board and the LEDs — so changing the face means printing
 another chassis and moving the electronics across. That's the trade for
 having one part do both jobs and for the build only needing four screws. The
-body and the back cover never change, so it's one 44 g print rather than a
+body and the back cover never change, so it's one 48 g print rather than a
 rebuild.
 
 ---
@@ -262,6 +296,9 @@ Every run checks itself and exits non-zero if anything is wrong:
 - no part has unsupported downward-facing area
 - a solid standing in for a USB-C plug actually reaches the connector
 - the LED shelf's bridge span is measured
+- the six LEDs, the dev board and a USB-C plug are modelled as solids and
+  boolean-tested against every printed part, so nothing can end up parked in
+  front of an LED hole or in the way of a connector
 - the screw arithmetic — thread engagement and clearance past the tip
 - the LEDs clear the dev board
 - the assembled parts are boolean-intersected against each other, and
