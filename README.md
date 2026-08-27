@@ -31,9 +31,9 @@ it's running on.
 Sessions are tracked individually and the most urgent one wins, so five
 terminals and three worktrees still collapse into one colour.
 
-The enclosure is a **penguin**, built on an 8 mm voxel grid and 72 × 56 ×
-112 mm on your desk. Black shell, white belly, two cubes for feet. The belly
-is a 40 × 64 mm panel divided by an engraved grid into **5 × 8 pixels**, and
+The enclosure is a **penguin**, built on a 10 mm voxel grid and 80 × 60 ×
+120 mm on your desk. Black shell, white belly, two cubes for feet. The belly
+is a 40 × 60 mm panel divided by an engraved grid into **4 × 6 pixels**, and
 it is the whole front of the thing — you can read it from across the room
 without looking for a small light.
 
@@ -59,8 +59,8 @@ If you own a 3D printer and a parts drawer, you probably have all of this.
 | M3 × 1/4" screws | 4 | Standard PC case screws — Micro Connectors `SCW-50M3` or any M3 × 6 mm pan head |
 | **USB cable that carries data** | 1 | Not a charge-only cable |
 | Zip tie, small | 1 | Strain relief on the cable |
-| Black filament | ~83 g | Body, back cover, beak |
-| White or natural filament | ~56 g | Chassis and eyes |
+| Black filament | ~105 g | Body, back cover, beak |
+| White or natural filament | ~44 g | Chassis and eyes |
 | *Optional:* rubber feet, 11 mm | 4 | Recesses are in the base |
 
 Every screw in the build is the same one: **M3 × 1/4"**, four of them, into
@@ -204,20 +204,20 @@ voxel:
 
 ```python
 PIXELS = [
-    "...###...",   # 0   crown
-    "..#####..",   # 1   head
-    "..#####..",   # 2   eyes
-    "..#####..",   # 3   beak
-    ".#######.",   # 4   shoulders
-    "#########",   # 5   flippers start
+    "..####..",   # 0   crown
+    ".######.",   # 1   eyes
+    ".######.",   # 2   beak
+    ".######.",   # 3   neck
+    "########",   # 4   shoulders, window top
+    "########",   # 5   flippers
     ...
 ```
 
 Edit it and the whole enclosure follows — the window, the eyes, the beak and
 the feet are all addressed by grid coordinates, and the engraved pixel grid
-regenerates to match. `PITCH` is the voxel size, 8 mm.
+regenerates to match. `PITCH` is the voxel size, 10 mm.
 
-The belly is plain by default: 5 × 8 lit pixels. You can cut a glyph into it
+The belly is plain by default: 4 × 6 lit pixels. You can cut a glyph into it
 instead — `--face smiley`, `--face chick`, or `--face text --text "BUSY"` —
 which thins that area to 0.9 mm so it glows brighter than the panel around
 it. It's a print-time choice rather than a swap, because the belly is also
@@ -272,8 +272,8 @@ forward voltage is nearly the full 3.3 V a GPIO can supply, so they only get
 about 2 mA where the others get 7. The firmware already compensates with higher
 PWM duty; [`hardware/WIRING.md`](hardware/WIRING.md) has two stronger fixes.
 
-**The belly is patchy rather than even** — six LEDs 9.4 mm behind a
-40 × 64 mm panel will show where they are. The white chamber and the engraved
+**The belly is patchy rather than even** — six LEDs 14.4 mm behind a
+40 × 60 mm panel will show where they are. The white chamber and the engraved
 pixel grid are there to fight that, but the cheapest fix by far is to **sand
 the dome of each LED flat on 400-grit** until it's frosted. That turns a ~20°
 beam into a wide scatter and does more than either of the other two.

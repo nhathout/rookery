@@ -21,12 +21,12 @@ one Bambu A1 mini, and hand assembly.
 | Hookup wire, zip tie | — | $0.25 | $0.10 |
 | Rubber feet | 4 | $0.20 | $0.08 |
 | USB-A/C data cable, 1 m | 1 | $2.50 | $1.10 |
-| Filament — 83 g black | — | $1.66 | $1.40 |
-| Filament — 56 g white | — | $1.12 | $0.94 |
+| Filament — 105 g black | — | $2.10 | $1.76 |
+| Filament — 44 g white | — | $0.88 | $0.74 |
 | Box, insert, printed card | — | — | $2.20 |
-| **Materials** | | **$16.05** | **$11.83** |
+| **Materials** | | **$16.25** | **$11.95** |
 
-**Machine time.** About 11 hours across two plates, or roughly one unit per
+**Machine time.** About 12 hours across two plates, or roughly one unit per
 A1 mini per day allowing for the filament change. That is not labour, but it is
 capital and floor space: **one printer supports about 20 units a month.** Any
 real volume means more printers, and printers are the cheapest thing on this
@@ -130,7 +130,7 @@ cost of needing to care about USB, regulation and certification yourself.
 - A card with the one-line install and a link
 
 One thing worth considering in the box: a **spare beak in orange**. It is a
-single 8 mm cube, it costs a gram of filament and no labour, and it is the
+single small wedge, it costs a gram of filament and no labour, and it is the
 one thing a buyer can change about how the penguin looks without touching a
 screwdriver.
 

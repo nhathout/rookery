@@ -122,14 +122,14 @@ body in a single move.
        |                          the shelf
 ```
 
-Six LEDs in a 17 mm circle, 9.4 mm behind a 40 × 64 mm panel, one lit at a
+Six LEDs in a 17 mm circle, 14.4 mm behind a 40 × 60 mm panel, one lit at a
 time. Three things stop that reading as six bright spots:
 
 1. **The box.** The chassis is white on all six inside faces, so the light
    chamber is its own diffuser: what does not go straight out the front
    bounces around until it does.
-2. **The pixel grid.** The same 8 mm grid as the body is engraved 0.6 mm
-   into the belly face, which breaks the panel into 5 × 8 lit squares. It
+2. **The pixel grid.** The same 10 mm grid as the body is engraved 0.6 mm
+   into the belly face, which breaks the panel into 4 × 6 lit squares. It
    hides the fall-off between LEDs by giving the eye something deliberate to
    read instead.
 3. **Sanding the LEDs.** Rub the dome of each one flat on 400-grit until
@@ -159,8 +159,8 @@ makes it noticeably stronger.
 | Hookup wire | — | Stranded, 26–28 AWG |
 | **USB cable that carries data** | 1 | Not a charge-only cable |
 | Zip tie, small | 1 | Strain relief on the cable |
-| Black filament | ~83 g | Body, back cover, beak |
-| White or natural filament | ~56 g | Chassis and eyes |
+| Black filament | ~105 g | Body, back cover, beak |
+| White or natural filament | ~44 g | Chassis and eyes |
 | *Optional:* rubber feet | 4 | |
 
 The thing that still trips people up: **the cable**. Plenty of USB cables in

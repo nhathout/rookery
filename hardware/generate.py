@@ -63,62 +63,79 @@ from trimesh.creation import box, cylinder, extrude_polygon
 # ---------------------------------------------------------------------------
 
 # -- the grid. Everything else is a multiple of this.
-PITCH = 8.0
+PITCH = 10.0
 
 # The penguin, one character per voxel, row 0 at the top. Edit this and the
-# whole enclosure changes shape; the window, the eyes and the feet are all
-# addressed by grid coordinates below, so they follow.
+# whole enclosure changes shape; the window, the eyes, the beak and the feet
+# are all addressed by grid coordinates below, so they follow.
+#
+# Rows 3-8 have to stay at least six voxels wide: that is the band the
+# chassis occupies, and it has to fit inside the body wall there.
 PIXELS = [
-    "...###...",   # 0   crown
-    "..#####..",   # 1   head
-    "..#####..",   # 2   eyes
-    "..#####..",   # 3   beak
-    ".#######.",   # 4   shoulders -- the black band above the belly
-    "#########",   # 5   flippers start
-    "#########",   # 6
-    "#########",   # 7
-    "#########",   # 8
-    "#########",   # 9   flippers end
-    ".#######.",   # 10
-    ".#######.",   # 11
-    ".#######.",   # 12
-    ".#######.",   # 13  base -- the black band below the belly
+    "..####..",   # 0   crown
+    ".######.",   # 1   eyes
+    ".######.",   # 2   beak
+    ".######.",   # 3   neck -- the black band above the belly
+    "########",   # 4   shoulders, window top
+    "########",   # 5   flippers
+    "########",   # 6
+    "########",   # 7
+    "########",   # 8
+    ".######.",   # 9   window bottom
+    ".######.",   # 10
+    ".######.",   # 11  base -- the black band below the belly
 ]
 
-DEPTH = 48.0          # back plane (y=0) to the front face, 6 voxels
+DEPTH = 50.0          # back plane (y=0) to the front face, 5 voxels
 WALL = 2.4
 BACK_T = 3.0          # rear cover
-GROOVE_W, GROOVE_D = 1.0, 0.9    # the pixel grid, engraved into the front
-FACE_GROOVE_D = 0.6              # shallower on the belly: it has to stay opaque
+GROOVE_W, GROOVE_D = 1.2, 0.9    # the pixel grid, engraved into every face
+FACE_GROOVE_D = 0.6              # shallower on the belly: it stays opaque
 
 # -- the belly window, in grid coordinates (col0, col1, row0, row1) inclusive
-WINDOW = (2, 6, 5, 12)           # 40 x 64 mm of glowing white
-WINDOW_CLEAR = 0.25              # per side, chassis plug to window
+WINDOW = (2, 5, 4, 9)            # 40 x 60 mm, 4 x 6 lit pixels
+WINDOW_CLEAR = 0.2               # per side, chassis plug to window
+FLARE = 4.0                      # 45-degree seat, on the X sides only
 
 # -- eyes and beak, in grid coordinates
-EYE_COLS, EYE_ROW = (3, 5), 2
-EYE_SIZE = 5.6                   # inset inside its voxel, so it reads as a pixel
-EYE_DEPTH = 6.0
-BEAK_COL, BEAK_ROW = 4, 3
-BEAK_OUT = 8.0                   # one voxel, straight out the front
-BEAK_SIZE = 6.4
+EYE_COLS, EYE_ROW = (2, 5), 1
+EYE_SIZE = 8.4                   # nearly the whole voxel: big eyes read cuter
+EYE_DEPTH = 7.0
+PUPIL_SIZE = 4.4                 # goes right through: the dark behind it
+                                 # is the inside of the head
+PUPIL_DROP = 0.6                 # pupils sit low: it reads as looking at you
+BEAK_COLS, BEAK_ROW = (3, 4), 2
+BEAK_W, BEAK_H = 12.0, 7.0       # smaller than its cells: a beak, not a muzzle
+BEAK_OUT = 8.0                   # straight out the front
 PRESS_CLEAR = 0.18
 
 # -- feet: cubes stuck on the front at the base
-FOOT_COLS = ((2, 3), (5, 6))
-FOOT_ROW = 13
-FOOT_OUT = 8.0                   # one voxel forward
+FOOT_COLS = ((1, 2), (5, 6))
+FOOT_ROW = 11
+FOOT_OUT = 10.0                  # one voxel forward
 
-# -- chassis: the white box. Sized around the dev board, not the window.
-CH_WALL = 2.2                    # CH_W/CH_H/CH_D are derived, further down
+# -- chassis: the white box. CH_W/CH_H/CH_D are derived, further down.
+CH_WALL = 1.8
+CH_D = 39.0
 GLYPH_FLOOR = 0.9                # material left where an optional glyph glows
-SMILEY_SCALE = 2.0               # the stock smiley was drawn for a smaller window
+SMILEY_SCALE = 2.2               # the stock smiley was drawn for a smaller window
 
 # -- dev board (ESP32-S3-DevKitC-1), upright, USB pointing down. MEASURE YOURS.
+#
+# The board is LONGER than the chassis is tall, on purpose. Its top passes
+# through a slot in the chassis roof into the head, and its USB connector
+# sits low enough that a plug has somewhere to go -- which is the one thing
+# a box sized to the window cannot give you.
 BOARD_L, BOARD_W = 63.5, 25.5
 BOARD_CLEAR = 0.6
 BOARD_TALL = 8.0                 # tallest thing standing on it
 BOARD_POST_D = 6.0
+BOARD_RISE = 7.0                 # board centre, above the window centre
+BOARD_Y = 26.5                   # front face of the board, from the belly face
+
+# -- the USB plug. Nothing in the mesh represents it, so it is checked
+# explicitly: a plug that does not fit is a build you cannot finish.
+PLUG_W, PLUG_T, PLUG_L = 13.0, 9.0, 22.0
 
 # -- LED shelf inside the chassis
 LED_D = 5.0
@@ -126,7 +143,7 @@ LED_CLEAR = 0.25
 LED_BODY = 8.6                   # 5 mm LED, dome tip to flange
 LED_CIRCLE_D = 17.0
 LED_COUNT = 6
-SHELF_Y = 15.0                   # front face of the shelf, from the belly face
+SHELF_Y = 20.0                   # front face of the shelf, from the belly face
 SHELF_T = 3.0
 SHELF_GAP = 7.0                  # wire route past the shelf, one side
 
@@ -154,7 +171,7 @@ INSERT_GRIP = 0.15
 INSERT_LEADIN = 0.8              # 45-degree countersink, starts it straight
 SCREW_RUNOUT = 2.0               # empty hole past the insert for the screw tip
 BOSS_D = 9.0
-BOSS_H = 13.0
+BOSS_H = 11.0
 
 # derived
 INSERT_BORE = INSERT_OD - INSERT_GRIP
@@ -401,7 +418,7 @@ def boss_positions():
     cavity, clear of the chassis."""
     inner = pixel_poly().buffer(-WALL)
     out = []
-    for row in (4, NROW - 2):
+    for row in (4, NROW - 1):
         z = cell(0, row).bounds[1] + PITCH / 2
         band = inner.intersection(sbox(-BODY_W, z - 0.25, BODY_W, z + 0.25))
         w = max(abs(band.bounds[0]), abs(band.bounds[2]))
@@ -450,13 +467,23 @@ def build_body():
                          (b[0] + b[2]) / 2, DEPTH - EYE_DEPTH / 2 + 1.0,
                          (b[1] + b[3]) / 2 - EYE_SIZE / 2))
     # --- beak socket
-    bb = cell(BEAK_COL, BEAK_ROW).bounds
-    cuts.append(cube(BEAK_SIZE, WALL + 2.0, BEAK_SIZE, (bb[0] + bb[2]) / 2,
-                     DEPTH - WALL / 2 + 1.0,
-                     (bb[1] + bb[3]) / 2 - BEAK_SIZE / 2))
+    bb = span(BEAK_COLS[0], BEAK_COLS[1], BEAK_ROW, BEAK_ROW).bounds
+    cuts.append(cube(BEAK_W - 3.0, WALL + 2.0, BEAK_H - 3.0,
+                     (bb[0] + bb[2]) / 2, DEPTH - WALL / 2 + 1.0,
+                     (bb[1] + bb[3]) / 2 - (BEAK_H - 3.0) / 2))
 
-    # --- the pixel grid, engraved
+    # --- the pixel grid, engraved. On the front face, and wrapped around
+    # the sides and the top as well: from any angle the thing has to read as
+    # a stack of cubes, not as a slab with a picture on it.
     cuts.append(yprism(grid_lines(), DEPTH + EPS, GROOVE_D + EPS))
+    rim = poly.difference(poly.buffer(-GROOVE_D)).simplify(SIMPLIFY)
+    for r in range(1, NROW):                      # lines around the sides
+        z = (NROW - r) * PITCH
+        cuts.append(yprism(rim.intersection(
+            sbox(-BODY_W, z - GROOVE_W / 2, BODY_W, z + GROOVE_W / 2)),
+            DEPTH + 1.0, DEPTH + 2.0))
+    for k in range(1, int(round(DEPTH / PITCH))):  # lines around the depth
+        cuts.append(yprism(rim, DEPTH - k * PITCH + GROOVE_W / 2, GROOVE_W))
 
     # --- heat-set pockets, mouths facing out of the open back
     for (x, z) in boss_positions():
@@ -480,19 +507,23 @@ def build_body():
 #    18.0 .. 21.5   board posts standing on the shelf
 # ---------------------------------------------------------------------------
 
-FLARE = 4.0
-CH_W = span(*WINDOW).bounds[2] - span(*WINDOW).bounds[0] + 2 * FLARE
-CH_H = span(*WINDOW).bounds[3] - span(*WINDOW).bounds[1] + 2 * FLARE
-CH_CZ = (span(*WINDOW).bounds[1] + span(*WINDOW).bounds[3]) / 2
-CH_D = 34.0
-SHELF_Y = 15.0
-BOARD_Y = 21.5          # front face of the board, from the belly face
+_WB = span(*WINDOW).bounds
+CH_W = _WB[2] - _WB[0] + 2 * FLARE
+CH_H = _WB[3] - _WB[1]
+CH_CZ = (_WB[1] + _WB[3]) / 2
+BOARD_CZ = CH_CZ + BOARD_RISE
 
 
 def ch_rect(grow: float = 0.0) -> Polygon:
-    """The chassis outline at a given outward offset from the window."""
-    r = window_rect(-WINDOW_CLEAR)
-    return r.buffer(grow, join_style=2) if grow else r
+    """The chassis outline, grown OUTWARD IN X ONLY.
+
+    Being oversize in one direction is all it takes to stop the chassis
+    passing forward through the window, and growing in X only keeps the box
+    inside the body wall at the top and bottom of its travel -- where the
+    penguin narrows to six voxels and there is no room to spare.
+    """
+    b = window_rect(-WINDOW_CLEAR).bounds
+    return sbox(b[0] - grow, b[1], b[2] + grow, b[3])
 
 
 def yflare(poly: Polygon, y_front: float, run: float, steps: int = 0):
@@ -500,10 +531,11 @@ def yflare(poly: Polygon, y_front: float, run: float, steps: int = 0):
     the staircase lands on layer boundaries and slices out flat."""
     steps = steps or max(4, int(math.ceil(run / SLAB)))
     es = np.linspace(0.0, run, steps + 1)
+    b = poly.bounds
     slabs = []
     for k, (e0, e1) in enumerate(zip(es, es[1:])):
         off = 0.5 * (e0 + e1)
-        p = poly.buffer(off, join_style=2)
+        p = sbox(b[0] - off, b[1], b[2] + off, b[3])
         last = k == steps - 1
         slabs.append(solid(p, (e1 - e0) + (0.0 if last else OVERLAP), e0))
     return stand(union(*slabs), y_front)
@@ -533,21 +565,37 @@ def build_chassis(face: str = "blank", text: str = "AFK"):
 
     # --- board posts, standing on the shelf so nothing crosses the light
     # chamber and casts a shadow on the belly
-    bw, bl = BOARD_W + 2 * BOARD_CLEAR, BOARD_L + 2 * BOARD_CLEAR
+    # --- board posts, standing on the shelf so nothing crosses the light
+    # chamber and casts a shadow on the belly. The board is longer than the
+    # box is tall, so the posts grip it well inboard of its ends rather than
+    # at its corners.
+    bw = BOARD_W + 2 * BOARD_CLEAR
     y_shelf_back = y_face - SHELF_Y - SHELF_T
     post_h = y_shelf_back - (y_face - BOARD_Y)
+    grip = 15.0
+    y_board = y_face - BOARD_Y
     for sx in (-1, 1):
         for sz in (-1, 1):
             adds.append(ybore(BOARD_POST_D, post_h + OVERLAP,
-                              sx * (bw / 2 - 5.0),
-                              CH_CZ + sz * (bl / 2 - 5.0),
-                              y_face - BOARD_Y))
-    # retention tabs: press the board in and it clicks under these
+                              sx * (bw / 2 - 5.0), BOARD_CZ + sz * grip,
+                              y_board))
+    # --- retention tabs. Each one is a column standing on the shelf just
+    # outboard of the board, with a lip that reaches back over its edge:
+    # press the board in and it clicks under. The column matters -- a lip
+    # on its own is a piece of plastic attached to nothing, which prints as
+    # a blob on the plate and holds precisely no boards.
+    tab_w, tab_z = 3.4, 12.0
+    tab_x = bw / 2 + tab_w / 2 + 0.3
+    lip_in = bw / 2 - 1.6
     for sx in (-1, 1):
         for sz in (-1, 1):
-            adds.append(cube(2.6, 1.4, 12.0, sx * (bw / 2 - 0.3),
-                             y_face - BOARD_Y - 1.6,
-                             CH_CZ + sz * 16.0 - 6.0))
+            zc = BOARD_CZ + sz * grip - tab_z / 2
+            adds.append(cube(tab_w, y_shelf_back - (y_board - 2.4), tab_z,
+                             sx * tab_x,
+                             (y_shelf_back + y_board - 2.4) / 2, zc))
+            adds.append(cube(tab_x + tab_w / 2 - lip_in, 1.4, tab_z,
+                             sx * (tab_x + tab_w / 2 + lip_in) / 2,
+                             y_board - 1.7, zc))
 
     ch = union(*adds)
 
@@ -566,6 +614,17 @@ def build_chassis(face: str = "blank", text: str = "AFK"):
                               LED_CIRCLE_D / 2 * math.cos(a),
                               CH_CZ + LED_CIRCLE_D / 2 * math.sin(a),
                               y_face - SHELF_Y - SHELF_T - EPS))
+
+    # --- pass-throughs. The board is longer than the box, and its USB
+    # connector needs somewhere for a plug to go: a slot in the roof lets
+    # the top of the board out into the head, and a slot in the floor lets
+    # the plug down into the base. Without the second one you cannot plug
+    # the thing in at all.
+    slot_w = BOARD_W + 2.0
+    cuts.append(cube(slot_w, CH_D, CH_WALL + 2 * EPS, 0.0,
+                     y_face - CH_D / 2, CH_CZ + CH_H / 2 - CH_WALL - EPS))
+    cuts.append(cube(max(PLUG_W + 2.0, 15.0), CH_D, CH_WALL + 2 * EPS, 0.0,
+                     y_face - CH_D / 2, CH_CZ - CH_H / 2 - EPS))
 
     # --- the same pixel grid as the body, carried across the belly. Cut
     # shallower here: the face is only WALL thick and it still has to be
@@ -756,7 +815,7 @@ def write_3mf(path, parts):
             z.writestr(info, data)
 
 
-def pack(items, plate=PLATE, gap=8.0, margin=8.0):
+def pack(items, plate=PLATE, gap=6.0, margin=6.0):
     """Shelf-pack parts onto as many plates as it takes. Returns a list of
     plates, each a list of (name, mesh, offset)."""
     plates, cur = [], []
@@ -781,6 +840,33 @@ def pack(items, plate=PLATE, gap=8.0, margin=8.0):
 # ---------------------------------------------------------------------------
 # CHECKS
 # ---------------------------------------------------------------------------
+def pieces(m) -> int:
+    """How many separate lumps of plastic this mesh is.
+
+    Anything above one means a feature is floating in mid-air, attached to
+    nothing -- which a slicer will happily print as a blob on the plate, or
+    not at all. trimesh's own body_count needs scipy; this is a union-find
+    over shared edges and needs nothing."""
+    n = len(m.faces)
+    parent = np.arange(n)
+
+    def find(a):
+        while parent[a] != a:
+            parent[a] = parent[parent[a]]
+            a = parent[a]
+        return a
+
+    e = m.edges_sorted
+    order = np.lexsort((e[:, 1], e[:, 0]))
+    e, owner = e[order], (order // 3)
+    same = np.all(e[1:] == e[:-1], axis=1)
+    for i in np.flatnonzero(same):
+        a, b = find(owner[i]), find(owner[i + 1])
+        if a != b:
+            parent[a] = b
+    return len({find(i) for i in range(n)})
+
+
 def overhangs(m, limit_deg: float = 45.0, min_face: float = 1.0):
     """Downward-facing area steeper than `limit_deg`, once the part is laid
     out for printing. This build claims to need no supports anywhere, and
@@ -854,31 +940,42 @@ def build_back():
 # ---------------------------------------------------------------------------
 
 def build_eyes():
+    """Two white plugs on a bar, each with a pupil sunk into its face.
+
+    The pupil goes all the way through, plug and bar both. Behind it is the
+    inside of the head, which is black PLA: face on, from across the room,
+    that reads as a dark pupil. A blind pocket would only have been a
+    shadow, and a shadow disappears the moment you look at it straight.
+
+    It also means the pupils pick up a little of the spill light that gets
+    into the head, so in a dark room the eyes glow faintly too."""
     s = EYE_SIZE - 2 * PRESS_CLEAR
-    parts = []
-    xs = []
+    t = WALL + 1.6
+    parts, cuts, eyes = [], [], []
     for c in EYE_COLS:
         b = cell(c, EYE_ROW).bounds
         cx, cz = (b[0] + b[2]) / 2, (b[1] + b[3]) / 2
-        xs.append(cx)
-        parts.append(cube(s, WALL + 1.6, s, cx, DEPTH - WALL / 2 - 0.8,
-                          cz - s / 2))
+        eyes.append((cx, cz))
+        parts.append(cube(s, t, s, cx, DEPTH - t / 2, cz - s / 2))
+        cuts.append(cube(PUPIL_SIZE, t + 4.0, PUPIL_SIZE, cx,
+                         DEPTH - (t + 4.0) / 2 + EPS,
+                         cz - PUPIL_SIZE / 2 - PUPIL_DROP))
     # a bar behind both plugs: they cannot be pushed out the front, and it is
     # one part to fit instead of two to lose
-    parts.append(cube(abs(xs[1] - xs[0]) + s, 1.8, s * 0.7,
-                      (xs[0] + xs[1]) / 2, DEPTH - WALL - 0.9,
-                      (cell(EYE_COLS[0], EYE_ROW).bounds[1]
-                       + cell(EYE_COLS[0], EYE_ROW).bounds[3]) / 2 - s * 0.35))
-    return union(*parts)
+    parts.append(cube(abs(eyes[1][0] - eyes[0][0]) + s, 1.8, s,
+                      (eyes[0][0] + eyes[1][0]) / 2, DEPTH - t - 0.9,
+                      eyes[0][1] - s / 2))
+    return diff(union(*parts), *cuts)
 
 
 def build_beak():
-    b = cell(BEAK_COL, BEAK_ROW).bounds
+    """A blunt wedge with a tang. Sits proud of the face by one voxel."""
+    b = span(BEAK_COLS[0], BEAK_COLS[1], BEAK_ROW, BEAK_ROW).bounds
     cx, cz = (b[0] + b[2]) / 2, (b[1] + b[3]) / 2
-    t = BEAK_SIZE - 2 * PRESS_CLEAR
-    head = cube(PITCH, BEAK_OUT + OVERLAP, PITCH, cx,
-                DEPTH + BEAK_OUT / 2 - OVERLAP / 2, cz - PITCH / 2)
-    tang = cube(t, WALL + 1.6, t, cx, DEPTH - WALL / 2 - 0.8, cz - t / 2)
+    tw, th = BEAK_W - 3.0 - 2 * PRESS_CLEAR, BEAK_H - 3.0 - 2 * PRESS_CLEAR
+    head = cube(BEAK_W, BEAK_OUT + OVERLAP, BEAK_H, cx,
+                DEPTH + BEAK_OUT / 2 - OVERLAP / 2, cz - BEAK_H / 2)
+    tang = cube(tw, WALL + 1.6, th, cx, DEPTH - WALL / 2 - 0.8, cz - th / 2)
     return union(head, tang)
 
 
@@ -887,7 +984,7 @@ def build_beak():
 COLOUR = {"body": "black", "back": "black", "beak": "black",
           "chassis": "white", "eyes": "white"}
 # False = open side on the plate; True = the glowing face on the plate.
-FRONT_DOWN = {"chassis"}
+FRONT_DOWN = {"chassis", "beak"}
 
 
 def fastener_report():
@@ -907,6 +1004,16 @@ def fastener_report():
           " the cover's pillars")
     print("  eyes, beak           press fit, no fasteners")
 
+    # The USB connector points down off the bottom of the board. Whether a
+    # plug can actually reach it is a number, so print the number.
+    z_conn = BOARD_CZ - BOARD_L / 2
+    room = z_conn - WALL
+    good_plug = room >= PLUG_L
+    ok &= good_plug
+    print(f"\n  USB connector at z={z_conn:.1f}, {room:.1f} mm of clear"
+          f" drop for a {PLUG_L:.0f} mm plug"
+          f"   {'ok' if good_plug else 'WILL NOT PLUG IN'}")
+
     tail = 0.0 if LEDS == "ring" else LED_BODY
     what = "ring, flush" if LEDS == "ring" else f"{LED_D:.0f} mm LED"
     gap = BOARD_Y - (SHELF_Y + SHELF_T)
@@ -921,18 +1028,30 @@ def fastener_report():
 def board_envelope():
     """The dev board plus the tallest thing on it, as a solid, so the fit
     check can see whether anything is parked where the board goes."""
-    return yprism(rrect(BOARD_W, BOARD_L, 1.0, cz=CH_CZ),
+    return yprism(rrect(BOARD_W, BOARD_L, 1.0, cz=BOARD_CZ),
                   DEPTH - BOARD_Y, 1.6 + BOARD_TALL)
+
+
+def plug_envelope():
+    """The USB plug, as a solid, hanging off the bottom of the board.
+
+    Nothing in the mesh represents it and nothing forces it to fit, which is
+    exactly why it has to be checked: a connector you cannot reach is a
+    build you cannot finish."""
+    z_conn = BOARD_CZ - BOARD_L / 2
+    return cube(PLUG_W, PLUG_T, PLUG_L, 0.0,
+                DEPTH - BOARD_Y - 0.8, z_conn - PLUG_L)
 
 
 def interference(parts):
     """Boolean-intersect the assembled parts. Anything above a rounding
     error is two pieces of plastic trying to occupy the same place."""
     print("\nFIT -- assembled interference (cm3)")
-    parts = dict(parts, board=board_envelope())
+    parts = dict(parts, board=board_envelope(), plug=plug_envelope())
     pairs = [("body", "back"), ("body", "chassis"), ("body", "eyes"),
              ("body", "beak"), ("back", "chassis"), ("chassis", "eyes"),
-             ("board", "body"), ("board", "chassis"), ("board", "back")]
+             ("board", "body"), ("board", "chassis"), ("board", "back"),
+             ("plug", "body"), ("plug", "chassis"), ("plug", "back")]
     ok = True
     for a, b in pairs:
         if a not in parts or b not in parts:
@@ -1005,7 +1124,7 @@ def main():
     }
 
     print(f"{'part':<12}{'solid':>8}{'vol cm3':>10}{'~g':>6}"
-          f"{'size mm':>24}{'plate':>8}{'ovrhng':>8}{'bridged':>9}")
+          f"{'size mm':>24}{'plate':>8}{'lumps':>7}{'ovrhng':>8}{'bridged':>9}")
     bad = 0
     for name, m in parts.items():
         e = m.extents
@@ -1016,11 +1135,13 @@ def main():
         fits = (p.extents[0] <= args.plate and p.extents[1] <= args.plate
                 and p.extents[2] <= PLATE_Z)
         slope, bridged = overhangs(p)
-        bad += (not ok) + (not fits) + (slope > 40.0)
+        lumps = pieces(m)
+        bad += (not ok) + (not fits) + (slope > 40.0) + (lumps != 1)
         print(f"  {name:<10}{('ok' if ok else 'BROKEN'):>8}{m.volume / 1000:>10.1f}"
               f"{m.volume / 1000 * 1.24:>6.0f}"
               f"{f'{e[0]:.0f} x {e[1]:.0f} x {e[2]:.0f}':>24}"
               f"{('ok' if fits else 'TOO BIG'):>8}"
+              f"{(str(lumps) if lumps == 1 else f'{lumps} !!'):>7}"
               f"{f'{slope:.0f}':>8}{f'{bridged:.0f}':>9}")
         p.export(os.path.join(args.out, f"{name}.stl"))
 
