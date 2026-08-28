@@ -32,6 +32,7 @@ class Daemon:
         http_port: int = 8787,
         brightness: int | None = None,
         simulate: bool = False,
+        token: str | None = None,
     ):
         self.registry = Registry()
         self.simulate = simulate
@@ -39,6 +40,7 @@ class Daemon:
         self.link = None if simulate else SerialLink(port, baud)
         self.http_host = http_host
         self.http_port = http_port
+        self.token = token
         self._httpd = None
         self._wake = threading.Event()
         self._stop = threading.Event()
@@ -87,7 +89,8 @@ class Daemon:
             self.link.start()
 
         self._httpd = make_server(
-            self.http_host, self.http_port, self.registry, self._on_event
+            self.http_host, self.http_port, self.registry, self._on_event,
+            token=self.token,
         )
 
         for sig in (signal.SIGINT, signal.SIGTERM):

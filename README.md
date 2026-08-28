@@ -31,6 +31,14 @@ it's running on.
 Sessions are tracked individually and the most urgent one wins, so five
 terminals and three worktrees still collapse into one colour.
 
+**It isn't only Claude Code.** Anything can drive the light — a training run,
+a policy server, a job queue on a cluster you aren't sitting at. Wrap a
+command in `rookery watch`, poll a machine with `rookery poll`, or POST a
+state from a shell script. Sessions and those sources are equals, and the
+most urgent still wins, so a job that died at 03:00 turns the penguin red
+while an agent is busy elsewhere. See
+[docs/INTEGRATIONS.md](docs/INTEGRATIONS.md).
+
 The enclosure is a **penguin**, built on a 10 mm voxel grid and 80 × 60 ×
 120 mm on your desk. Black shell, white belly, two cubes for feet. The belly
 is a 40 × 60 mm panel divided by an engraved grid into **4 × 6 pixels**, and
@@ -147,7 +155,38 @@ sudo loginctl enable-linger $USER    # survive logout
 
 macOS: [`scripts/com.rookery.daemon.plist`](scripts/com.rookery.daemon.plist).
 
-### 5. Print the enclosure
+### 5. Point it at your other work
+
+Claude Code is wired up by now, but the light is more useful when it also
+knows about the long-running things you actually wait on.
+
+```bash
+# anything on this machine that exits non-zero when it fails
+rookery watch --source train -- python train.py --steps 30000
+```
+
+For a machine you're *not* sitting at — a cluster login node, a GPU box in
+another room — the shape that works is one SSH session with a reverse tunnel,
+so the far end can report back without anything being exposed to the network:
+
+```bash
+ssh -R 8787:localhost:8787 <host> 'while true; do
+    curl -s -X POST -H "Content-Type: application/json"       -d "{\"source\":\"cluster\",\"state\":\"working\",\"ttl\":180}"       http://localhost:8787/state >/dev/null
+    sleep 60
+  done'
+```
+
+Or poll from this side, which needs nothing installed over there:
+
+```bash
+rookery poll --source cluster --every 60 --preset sge   --command 'ssh <host> "qstat -u $USER"'
+```
+
+The recipes, the queue presets, the HTTP API, and how to give a LAN machine a
+token: [docs/INTEGRATIONS.md](docs/INTEGRATIONS.md).
+
+
+### 6. Print the enclosure
 
 **The meshes are committed — you don't need to run anything.** The `.3mf`
 files in [`hardware/stl/`](hardware/stl/) are pre-arranged plates: open one in
@@ -197,7 +236,7 @@ and a boolean interference test of the assembled parts against each other and
 against a solid standing in for the dev board. A bad parameter fails loudly
 instead of at the printer.
 
-### 6. The shape is a pixel map
+### 7. The shape is a pixel map
 
 `PIXELS` at the top of `generate.py` *is* the penguin, one character per
 voxel:
@@ -234,10 +273,27 @@ Circuit and resistor values: [`hardware/WIRING.md`](hardware/WIRING.md).
 ```bash
 rookery run --brightness 90    # dimmer, for a dark room
 rookery run --simulate         # log state changes, no hardware needed
-rookery status                 # which sessions does it think are live?
+rookery status                 # what is driving the light right now?
 rookery set needs_you          # force a state (stop the daemon first)
 rookery print-hooks            # dump the hook JSON to stdout
 ```
+
+Driving it from something that isn't Claude Code:
+
+```bash
+# wrap a long job: green while it runs, red if it fails, yellow when it's done
+rookery watch --source train -- python train.py --steps 30000
+
+# ask a cluster what's queued, once a minute
+rookery poll --source scc --every 60 --preset sge   --command 'ssh scc "qstat -u $USER"'
+
+# report from a shell script, anywhere
+rookery notify needs_you --source deploy --detail "smoke test failed"
+rookery notify clear     --source deploy
+```
+
+Full reference, including reaching machines that can't reach you:
+[docs/INTEGRATIONS.md](docs/INTEGRATIONS.md).
 
 `--simulate` is genuinely useful: you can verify the whole hook pipeline before
 the hardware exists.
@@ -286,6 +342,20 @@ the crown of the reflector, so they're subtle by design and best seen in a dim
 room. Printing them in natural or clear filament rather than white helps a
 lot.
 
+**The light is green but no agent is running** — something else is holding
+it. `rookery status` lists every session and source behind the current
+colour, with a `detail` line saying what each one is.
+
+**A source is stuck on** — sources expire on their own (180 s by default,
+`--ttl` to change), but a job that reported `needs_you` deliberately holds
+for an hour so you actually see it. `rookery notify clear --source <name>`
+to drop it now.
+
+**`rookery poll` asks for a password every minute** — give SSH a shared
+connection: `ControlMaster auto` + `ControlPersist 8h` in `~/.ssh/config`,
+then authenticate once by hand. Details in
+[docs/INTEGRATIONS.md](docs/INTEGRATIONS.md).
+
 **Hook errors in the transcript** — the daemon isn't running. HTTP hooks report
 a connection failure as a non-blocking error: visible, harmless, and it won't
 interrupt your work. Switch to the command-hook variant if it bothers you; that
@@ -295,20 +365,39 @@ one exits 0 silently.
 
 ## Extending it
 
-Nothing below the hook layer is Claude Code-specific. The daemon accepts any
-POST to `/hook` carrying a `hook_event_name` and a `session_id`, so pointing
-another tool at it is a matter of mapping that tool's events onto the four
-states in [`host/rookery/state.py`](host/rookery/state.py).
-
-The serial protocol is plain text, so you can drive the light from a shell
-script, a CI webhook, or a build system without going near the daemon:
+Nothing below the hook layer is Claude Code-specific. Three ways in, in
+increasing order of effort:
 
 ```bash
-printf 'STATE needs_you\n' > /dev/rookery
+# 1. wrap a command
+rookery watch --source train -- python train.py
+
+# 2. report from a script
+rookery notify needs_you --source deploy --detail "smoke test failed"
+
+# 3. POST it yourself, from anywhere that can reach the daemon
+curl -s -X POST http://localhost:8787/state   -H 'Content-Type: application/json'   -d '{"source":"ci","state":"working","detail":"build 4412","ttl":600}'
 ```
 
-`LED <colour> <0-255>` addresses any single LED directly if you want to invent
-your own signals.
+The daemon also still accepts any POST to `/hook` carrying a
+`hook_event_name` and a `session_id`, so pointing another agent tool at it is
+a matter of mapping that tool's events onto the four states in
+[`host/rookery/state.py`](host/rookery/state.py).
+
+Below that, the serial protocol is plain text, so you can drive the light
+from a shell script, a CI webhook, or a build system without going near the
+daemon at all:
+
+```bash
+printf 'STATE needs_you
+' > /dev/rookery
+```
+
+`LED <colour> <0-255>` addresses any single LED directly if you want to
+invent your own signals.
+
+Full integration guide: [docs/INTEGRATIONS.md](docs/INTEGRATIONS.md).
+Serial reference: [docs/PROTOCOL.md](docs/PROTOCOL.md).
 
 ---
 
@@ -325,7 +414,9 @@ hardware/
   MOTOR.md        power budget, and adding a motor
   PRODUCTION.md   what it costs to build, and to sell
 scripts/          systemd unit, launchd plist, udev rules
-docs/             serial protocol reference
+docs/
+  PROTOCOL.md     serial protocol reference
+  INTEGRATIONS.md driving the light from anything else
 ```
 
 ---
