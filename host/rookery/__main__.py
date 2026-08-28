@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+import re
 import sys
 import threading
 import time
@@ -213,6 +214,64 @@ def cmd_watch(args) -> int:
     return code
 
 
+_RULE = re.compile(r"^\s*([A-Za-z_][\w.\[\]*]*)\s*(==|!=|>=|<=|>|<)?\s*(.*?)\s*$")
+
+
+def _walk(node, parts):
+    """Yield every value at a dotted path. `[*]` means 'any element'."""
+    if not parts:
+        yield node
+        return
+    head, rest = parts[0], parts[1:]
+    if head.endswith("[*]"):
+        node = node.get(head[:-3]) if isinstance(node, dict) else None
+        for item in node or ():
+            yield from _walk(item, rest)
+    elif isinstance(node, dict) and head in node:
+        yield from _walk(node[head], rest)
+
+
+def _truthy(value) -> bool:
+    # An empty list is the interesting case: `blockers` with nothing in it
+    # should read as false, not as "a list exists".
+    return bool(value)
+
+
+def check_rule(data, rule: str) -> tuple[bool, str]:
+    """Evaluate one `path`, `path==value` or `path>number` rule against JSON.
+
+    Deliberately not eval(): these come off a command line and end up driving
+    a light, and a rule language you cannot read at a glance is one you will
+    mis-write at 2am. Paths, one comparison, no expressions.
+    """
+    m = _RULE.match(rule)
+    if not m:
+        return False, ""
+    path, op, wanted = m.group(1), m.group(2), m.group(3)
+    values = list(_walk(data, path.split(".")))
+    if not values:
+        return False, ""
+
+    for value in values:
+        if op is None:
+            if _truthy(value):
+                got = value[0] if isinstance(value, list) and value else value
+                return True, f"{path}={str(got)[:60]}"
+            continue
+        try:
+            if op in (">", "<", ">=", "<="):
+                a, b = float(value), float(wanted)
+                hit = (a > b if op == ">" else a < b if op == "<"
+                       else a >= b if op == ">=" else a <= b)
+            else:
+                hit = (str(value) == wanted) if op == "==" else (str(value) != wanted)
+        except (TypeError, ValueError):
+            continue
+        if hit:
+            return True, f"{path}{op}{wanted}"
+    return False, ""
+
+
 def cmd_poll(args) -> int:
     """Run a shell command on a timer and map its output onto a state.
 
@@ -221,17 +280,42 @@ def cmd_poll(args) -> int:
     node cannot open a connection to your desk, but you can always ask it
     what is queued.
     """
-    import re
     import subprocess
 
     preset = PRESETS.get(args.preset or "", {})
-    rules = [
-        (NEEDS_YOU, args.needs_you_re or preset.get("needs_you")),
-        (WORKING, args.working_re or preset.get("working")),
-        (IDLE, args.idle_re or preset.get("idle")),
-    ]
-    rules = [(s, re.compile(p, re.M)) for s, p in rules if p]
     fallback = None if args.otherwise == "clear" else args.otherwise
+
+    if args.json:
+        json_rules = [(NEEDS_YOU, args.needs_you_if), (WORKING, args.working_if),
+                      (IDLE, args.idle_if)]
+
+        def classify(text):
+            try:
+                data = json.loads(text)
+            except ValueError:
+                # The command printed something that is not JSON -- a traceback,
+                # a "not found". That is a broken reporter, not a state.
+                return "__unparseable__", ""
+            for state, rules in json_rules:
+                for rule in rules or ():
+                    hit, why = check_rule(data, rule)
+                    if hit:
+                        return state, why
+            return fallback, ""
+    else:
+        rules = [
+            (NEEDS_YOU, args.needs_you_re or preset.get("needs_you")),
+            (WORKING, args.working_re or preset.get("working")),
+            (IDLE, args.idle_re or preset.get("idle")),
+        ]
+        rules = [(s, re.compile(p, re.M)) for s, p in rules if p]
+
+        def classify(text):
+            for state, pattern in rules:
+                m = pattern.search(text)
+                if m:
+                    return state, m.group(0).strip()[:80]
+            return fallback, ""
 
     print(f"polling every {args.every}s: {args.command}")
     last = object()
@@ -249,12 +333,11 @@ def cmd_poll(args) -> int:
                 # let the source's TTL decide if we have been quiet too long.
                 print(f"  (command failed, exit {code}; leaving the light alone)")
             else:
-                state, detail = fallback, ""
-                for candidate, pattern in rules:
-                    m = pattern.search(text)
-                    if m:
-                        state, detail = candidate, m.group(0)[:80]
-                        break
+                state, detail = classify(text)
+                if state == "__unparseable__":
+                    print("  (output was not JSON; leaving the light alone)")
+                    time.sleep(args.every)
+                    continue
                 if code != 0 and args.on_error != "skip":
                     state, detail = args.on_error, f"command exit {code}"
                 if state != last:
@@ -402,6 +485,15 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--every", type=float, default=60.0, help="seconds")
     sp.add_argument("--timeout", type=float, default=30.0,
                     help="give up on the command after this long")
+    sp.add_argument("--json", action="store_true",
+                    help="the command prints JSON; select on fields with the "
+                         "--*-if rules below instead of regexes")
+    sp.add_argument("--needs-you-if", action="append", metavar="RULE",
+                    help="JSON rule, repeatable: a dotted path (true when "
+                         "non-empty), or path==value / path>number. "
+                         "[*] means any element, e.g. crew[*].state==failed")
+    sp.add_argument("--working-if", action="append", metavar="RULE")
+    sp.add_argument("--idle-if", action="append", metavar="RULE")
     sp.add_argument("--preset", choices=sorted(PRESETS),
                     help="ready-made regexes for a queue listing: sge reads "
                          "`qstat -u $USER`, slurm reads `squeue -u $USER`")

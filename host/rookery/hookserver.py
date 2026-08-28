@@ -20,6 +20,7 @@ from __future__ import annotations
 import hmac
 import json
 import logging
+import os
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
@@ -161,7 +162,24 @@ def make_server(host: str, port: int, registry, on_event=None, token=None):
             else:
                 self._send(404)
 
-    httpd = ThreadingHTTPServer((host, port), Handler)
+    class Server(ThreadingHTTPServer):
+        # On Windows SO_REUSEADDR does not mean "reuse a port in TIME_WAIT",
+        # it means "let a second socket bind a port someone is already
+        # listening on". Leaving it on there lets a second `rookery run`
+        # start quietly beside the first: half your reports reach a daemon
+        # that is not the one driving your light, and nothing says so.
+        # Elsewhere it is still wanted, so a restart does not have to wait
+        # out TIME_WAIT.
+        allow_reuse_address = os.name != "nt"
+
+    try:
+        httpd = Server((host, port), Handler)
+    except OSError as exc:
+        raise SystemExit(
+            f"rookery: cannot listen on {host}:{port} ({exc}).\n"
+            "  Something is already there -- most likely another `rookery run`.\n"
+            "  Stop it, or pass --http-port to run a second one on purpose."
+        ) from exc
     httpd.daemon_threads = True
     thread = threading.Thread(target=httpd.serve_forever, daemon=True)
     thread.start()

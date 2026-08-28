@@ -160,34 +160,38 @@ macOS: [`scripts/com.rookery.daemon.plist`](scripts/com.rookery.daemon.plist).
 Claude Code is wired up by now, but the light is more useful when it also
 knows about the long-running things you actually wait on.
 
-```bash
-# anything on this machine that exits non-zero when it fails
-rookery watch --source train -- python train.py --steps 30000
+**A local agent crew.** [Thousand Sunny](https://github.com/nhathout/sunny)
+already prints everything the light needs — `python -m jobs.status` emits one
+JSON snapshot with the queue, every crewmate's state, open briefs and
+blockers — so this needs no changes to sunny at all:
+
+```powershell
+.\scripts\poll-sunny.ps1
 ```
 
-For a machine you're *not* sitting at — a cluster login node, a GPU box in
-another room — the shape that works is one SSH session with a reverse tunnel,
-so the far end can report back without anything being exposed to the network:
+Red when a crewmate failed or a brief is waiting on you, green while a task
+runs, yellow when there is something to read. Sunny's `blockers` list is
+non-empty on a healthy system, so it is deliberately yellow rather than red;
+a light that is always on is a light you stop looking at.
+
+**Anything else on this machine:**
 
 ```bash
-ssh -R 8787:localhost:8787 <host> 'while true; do
-    curl -s -X POST -H "Content-Type: application/json" \
-      -d "{\"source\":\"cluster\",\"state\":\"working\",\"ttl\":180}" \
-      http://localhost:8787/state >/dev/null
-    sleep 60
-  done'
+rookery watch --source bench -- python -m tools.bench_tools --runs 3
 ```
 
-Or poll from this side, which needs nothing installed over there:
+Green while it runs, red and staying red if it exits non-zero, yellow for a
+few minutes when it finishes.
+
+**Anything that prints JSON** can drive it the same way sunny does, by
+naming the fields that matter:
 
 ```bash
-rookery poll --source cluster --every 60 --preset sge \
-  --command 'ssh <host> "qstat -u $USER"'
+rookery poll --source ci --every 60 --json --command 'gh run list --json status' --working-if 'status==in_progress'
 ```
 
-The recipes, the queue presets, the HTTP API, and how to give a LAN machine a
-token: [docs/INTEGRATIONS.md](docs/INTEGRATIONS.md).
-
+The recipes — including machines that can't reach you, and how to give a LAN
+machine a token: [docs/INTEGRATIONS.md](docs/INTEGRATIONS.md).
 
 ### 6. Print the enclosure
 
@@ -285,13 +289,15 @@ Driving it from something that isn't Claude Code:
 
 ```bash
 # wrap a long job: green while it runs, red if it fails, yellow when it's done
-rookery watch --source train -- python train.py --steps 30000
+rookery watch --source weekly -- python -m jobs.weekly_run
 
-# ask a cluster what's queued, once a minute
-rookery poll --source scc --every 60 --preset sge   --command 'ssh scc "qstat -u $USER"'
+# ask something that prints JSON what it's doing, once a minute
+rookery poll --source sunny --every 60 --json \
+  --command 'cd /d C:\dev\sunny && .venv\Scripts\python.exe -m jobs.status' \
+  --needs-you-if 'crew[*].state==failed' --working-if 'queue.running>0'
 
 # report from a shell script, anywhere
-rookery notify needs_you --source deploy --detail "smoke test failed"
+rookery notify needs_you --source deploy --detail 'smoke test failed'
 rookery notify clear     --source deploy
 ```
 
@@ -418,7 +424,8 @@ hardware/
   WIRING.md       circuit, resistor values, where the LEDs sit
   MOTOR.md        power budget, and adding a motor
   PRODUCTION.md   what it costs to build, and to sell
-scripts/          systemd unit, launchd plist, udev rules
+scripts/          systemd unit, launchd plist, udev rules,
+                  poll-sunny.ps1
 docs/
   PROTOCOL.md     serial protocol reference
   INTEGRATIONS.md driving the light from anything else
