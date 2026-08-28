@@ -171,7 +171,9 @@ so the far end can report back without anything being exposed to the network:
 
 ```bash
 ssh -R 8787:localhost:8787 <host> 'while true; do
-    curl -s -X POST -H "Content-Type: application/json"       -d "{\"source\":\"cluster\",\"state\":\"working\",\"ttl\":180}"       http://localhost:8787/state >/dev/null
+    curl -s -X POST -H "Content-Type: application/json" \
+      -d "{\"source\":\"cluster\",\"state\":\"working\",\"ttl\":180}" \
+      http://localhost:8787/state >/dev/null
     sleep 60
   done'
 ```
@@ -179,7 +181,8 @@ ssh -R 8787:localhost:8787 <host> 'while true; do
 Or poll from this side, which needs nothing installed over there:
 
 ```bash
-rookery poll --source cluster --every 60 --preset sge   --command 'ssh <host> "qstat -u $USER"'
+rookery poll --source cluster --every 60 --preset sge \
+  --command 'ssh <host> "qstat -u $USER"'
 ```
 
 The recipes, the queue presets, the HTTP API, and how to give a LAN machine a
@@ -376,7 +379,9 @@ rookery watch --source train -- python train.py
 rookery notify needs_you --source deploy --detail "smoke test failed"
 
 # 3. POST it yourself, from anywhere that can reach the daemon
-curl -s -X POST http://localhost:8787/state   -H 'Content-Type: application/json'   -d '{"source":"ci","state":"working","detail":"build 4412","ttl":600}'
+curl -s -X POST http://localhost:8787/state \
+  -H 'Content-Type: application/json' \
+  -d '{"source":"ci","state":"working","detail":"build 4412","ttl":600}'
 ```
 
 The daemon also still accepts any POST to `/hook` carrying a
