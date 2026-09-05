@@ -72,3 +72,11 @@ python3 -m serial.tools.miniterm /dev/ttyUSB0 115200
 Then type `PING`, `STATE working`, `IDENT`, `LED orange 255`, and so on. If
 this works but the daemon doesn't, the problem is in the hook wiring, not the
 hardware.
+
+---
+
+## Next
+
+- Which GPIO each colour lives on: [hardware/pinout.md](hardware/pinout.md)
+- Balancing six mismatched LEDs: [hardware/wiring.md](hardware/wiring.md)
+- The host side of this conversation: [cli.md](cli.md)

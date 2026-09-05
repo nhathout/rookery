@@ -105,7 +105,7 @@ The one thing you give up is the constraint that made this design what it is:
 one colour at a time, at a few milliamps, off a USB port with no capacitor.
 Twelve WS2812Bs at full white are 700 mA. Cap the brightness in firmware and
 that is a non-issue, but it is a real change to the power story — see
-[MOTOR.md](MOTOR.md).
+[hardware/motion.md](hardware/motion.md).
 
 ### 2. A carrier PCB — the right fix at volume
 
@@ -195,3 +195,13 @@ The margin is in the assembly time. That is why the ring is the first change
 to make, and why the honest answer to "can this be profitable" is: yes, at
 around $89, once the LED loom stops being something a person does with their
 hands.
+
+---
+
+## Related
+
+- What each part costs to buy, and what it can and cannot do:
+  [hardware/components.md](hardware/components.md)
+- The ring build: [hardware/printing.md](hardware/printing.md) and
+  [hardware/enclosure.md](hardware/enclosure.md)
+- The 38 minutes, step by step: [hardware/assembly.md](hardware/assembly.md)
