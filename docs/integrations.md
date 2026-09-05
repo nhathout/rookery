@@ -110,7 +110,7 @@ needs **no changes to sunny at all**:
 
 ```powershell
 rookery poll --source sunny --every 60 --json `
-  --command 'cd /d C:\dev\sunny && .venv\Scripts\python.exe -m jobs.status' `
+  --command 'cd /d C:\dev\sunny && .venv\Scripts\python.exe -m jobs.status --no-probe' `
   --needs-you-if 'crew[*].state==failed' `
   --needs-you-if 'last_run.failed>0' `
   --needs-you-if 'budget.cap_reached' `
@@ -142,12 +142,70 @@ between a useful light and one you learn to ignore:
   worth seeing, but red is for things that are broken or blocking. If red
   means "sometime this week" you will stop believing it.
 
-A run takes about 3 seconds to answer, so a 60-second poll costs ~5% of one
-core. Sunny's own UI refreshes every 20 s, so this is well inside what the
-project already does to itself.
+#### `--no-probe`, and why the poll uses it
 
-For instant response instead of up-to-60-seconds, sunny can push at run
-start and finish as well — see the end of this file.
+A full snapshot takes about 3.2 s, and roughly 2.7 s of that is two Ollama
+round trips for backend health and what is loaded on the GPU. `--no-probe`
+skips both and answers in **0.5 s** — a 60-second poll drops from ~5% of one
+core to under 1%.
+
+What you give up is narrow and deliberate on sunny's side: `gpu` is omitted
+rather than faked, and `blockers` **keeps its key and its shape** minus the
+entries that cost a round trip. That last part is what makes the cheap
+snapshot safe to select on — a light with an `--idle-if 'blockers'` rule
+must not have the field vanish underneath it. Read `probed: false` to know
+backend health was not checked.
+
+Since `blockers` only ever reaches yellow here, and is non-empty on a healthy
+system anyway, the backend-health entries it drops are not information this
+light was going to act on. Poll with the full snapshot — `-Probe` on the
+script, or drop the flag — if you want a dead Ollama to show up as yellow.
+
+### A′. Thousand Sunny — pushing instead of waiting
+
+Polling answers within the poll interval. Sunny can also push the moment
+something changes, which is the difference between a light that tracks a run
+and one that catches up with it a minute later. It ships this already —
+`core/beacon.py`, off by default. In sunny's `config/config.yaml`:
+
+```yaml
+beacon:
+  enabled: true
+  url: "http://localhost:8787/state"
+  source: "sunny-run"
+  timeout_s: 2.0
+```
+
+`SUNNY_BEACON_URL` overrides the URL, so the address of a gadget on your desk
+never has to be committed.
+
+It posts on run and task transitions only — `working` on start, `idle` on a
+clean finish, `needs_you` on a failure or a crash. Every other event is
+ignored, because a post per collector would be a strobe light.
+
+**Run both.** They use different source names — `sunny-run` for the push,
+`sunny` for the poll — so they sit side by side rather than overwriting each
+other, and the most urgent still wins:
+
+```json
+{
+  "aggregate": "working",
+  "sources": {
+    "sunny":     { "state": "idle",    "ttl": 90, "detail": "crew[*].state==has_news" },
+    "sunny-run": { "state": "working", "ttl": 0,  "detail": "weekly_run started" }
+  }
+}
+```
+
+The push is the fast edge; the poll is the standing state, and the thing that
+still tells you a crewmate failed after the run that failed it is long over.
+
+One caveat worth knowing: sunny posts with **`ttl: 0`**, meaning never expire,
+because it reports its own end. That is right for a terminal state and a small
+risk for `working` — if the run is killed outright rather than exiting, the
+last thing the daemon heard was "started", and the light stays green until
+something else moves it. `rookery status` will show a `sunny-run` source with
+a large `age`; `rookery notify clear --source sunny-run` resets it.
 
 ### B. A long job on this machine
 
@@ -306,3 +364,13 @@ Authentication is off for localhost. With `--token`, every POST needs
 One daemon per port: on Windows a second `rookery run` used to bind the same
 port quietly and shadow the first, so half your reports reached a daemon
 that was not driving the light. It now refuses and says so.
+
+---
+
+## Next
+
+- Every flag on every verb: [cli.md](cli.md)
+- Wiring the Claude Code hooks up in the first place:
+  [getting-started.md](getting-started.md#6-wire-it-to-claude-code)
+- Something reporting when it shouldn't be:
+  [troubleshooting.md](troubleshooting.md)

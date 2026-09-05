@@ -24,6 +24,19 @@
       * `has_news` is yellow, not red. Red is for broken or blocking. If red
         means "sometime this week", you will stop looking at it.
 
+    This polls with `--no-probe`, which answers in 0.5s instead of 3.2s. The
+    difference is two Ollama round trips for backend health and GPU state.
+    `blockers` keeps its key and its shape either way -- sunny is deliberate
+    about that, so a light selecting on it cannot have the field vanish --
+    it just leaves out the entries that cost a round trip. Since `blockers`
+    only ever reaches yellow here, that is not something this light acts on.
+    Pass -Probe if you want a dead backend to show up.
+
+    Sunny can also push at run transitions instead of waiting for the next
+    poll -- see `beacon` in its config/config.yaml. It reports as a separate
+    source (`sunny-run`), so the two run side by side and the most urgent
+    wins. docs/integrations.md, recipe A'.
+
     Leave this running in its own terminal, or wrap it in a scheduled task.
     Ctrl-C clears the source so the light stops claiming to know.
 
@@ -31,17 +44,23 @@
     Where Thousand Sunny lives.
 
 .PARAMETER Every
-    Seconds between polls. A snapshot takes about 3s to answer, so 60 costs
-    roughly 5% of one core. Sunny's own UI refreshes every 20s.
+    Seconds between polls. A --no-probe snapshot takes about 0.5s, so 60
+    costs well under 1% of one core. Sunny's own UI refreshes every 20s.
+
+.PARAMETER Probe
+    Take the full snapshot, including backend health and GPU state. Costs
+    about 3.2s per poll instead of 0.5s.
 
 .EXAMPLE
     .\scripts\poll-sunny.ps1
     .\scripts\poll-sunny.ps1 -Every 30 -SunnyRoot D:\dev\sunny
+    .\scripts\poll-sunny.ps1 -Probe -Every 300
 #>
 [CmdletBinding()]
 param(
     [string]$SunnyRoot = "C:\dev\sunny",
     [int]$Every = 60,
+    [switch]$Probe,
     [string]$Source = "sunny",
     [string]$HttpHost = "127.0.0.1",
     [int]$HttpPort = 8787
@@ -56,9 +75,11 @@ if (-not (Test-Path $python)) {
 
 # `cd /d` so the poll works whatever directory you started it from: sunny
 # resolves config and logs relative to its own root.
-$command = "cd /d `"$SunnyRoot`" && `"$python`" -m jobs.status"
+$flag = if ($Probe) { "" } else { " --no-probe" }
+$command = "cd /d `"$SunnyRoot`" && `"$python`" -m jobs.status$flag"
 
-Write-Host "Watching $SunnyRoot every ${Every}s -> $HttpHost`:$HttpPort" -ForegroundColor Cyan
+$cost = if ($Probe) { "full snapshot" } else { "--no-probe" }
+Write-Host "Watching $SunnyRoot every ${Every}s ($cost) -> $HttpHost`:$HttpPort" -ForegroundColor Cyan
 
 rookery poll `
     --source $Source --every $Every --json `

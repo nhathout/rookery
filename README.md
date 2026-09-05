@@ -160,7 +160,8 @@ claude/           hook configuration for Claude Code
 hardware/
   generate.py     parametric model generator -> STL + per-colour 3MF plates
   stl/            printable meshes and plates, all committed
-scripts/          systemd unit, launchd plist, udev rules, poll-sunny.ps1
+scripts/          systemd unit, launchd plist, udev rules, and the
+                  Thousand Sunny poller plus its contract check
 docs/             everything above, and the index at docs/README.md
 ```
 
