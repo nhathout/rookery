@@ -324,7 +324,15 @@ def cmd_poll(args) -> int:
             try:
                 out = subprocess.run(args.command, shell=True, timeout=args.timeout,
                                      capture_output=True, text=True)
-                text, code = out.stdout + out.stderr, out.returncode
+                # In --json mode the snapshot is stdout and stderr is noise. One
+                # deprecation warning concatenated onto a perfectly good snapshot
+                # makes it unparseable, and the light goes quiet for a reason you
+                # cannot see from looking at it. Fall back to the combined output
+                # only when stdout is empty, so a command that merely failed still
+                # gets reported rather than silently classified as nothing.
+                text = (out.stdout if args.json and out.stdout.strip()
+                        else out.stdout + out.stderr)
+                code = out.returncode
             except subprocess.TimeoutExpired:
                 text, code = "", -1
 
