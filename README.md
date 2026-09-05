@@ -15,6 +15,8 @@ Claude Code ──hooks──▶ localhost:8787 ──▶ daemon ──USB seria
 No network. No telemetry. No cloud. Your session state never leaves the machine
 it's running on.
 
+**[Build one](docs/getting-started.md) · [Parts](docs/hardware/components.md) · [Drive it from anything](docs/integrations.md) · [All the docs](docs/README.md)**
+
 ---
 
 ## What it looks like
@@ -37,342 +39,72 @@ command in `rookery watch`, poll a machine with `rookery poll`, or POST a
 state from a shell script. Sessions and those sources are equals, and the
 most urgent still wins, so a job that died at 03:00 turns the penguin red
 while an agent is busy elsewhere. See
-[docs/INTEGRATIONS.md](docs/INTEGRATIONS.md).
+[docs/integrations.md](docs/integrations.md).
 
-The enclosure is a **penguin**, built on a 10 mm voxel grid and 80 × 60 ×
-120 mm on your desk. Black shell, white belly, two cubes for feet. The belly
-is a 40 × 60 mm panel divided by an engraved grid into **4 × 6 pixels**, and
-it is the whole front of the thing — you can read it from across the room
-without looking for a small light.
+## The penguin
 
-It is also the chassis: the LEDs, the dev board and the loom all mount inside
-that white box, so the entire electrical build happens on one part before
-anything goes near the penguin.
+The enclosure is built on a 10 mm voxel grid and stands 80 × 60 × 120 mm on
+your desk. Black shell, white belly, two cubes for feet. The belly is a
+40 × 60 mm panel divided by an engraved grid into **4 × 6 pixels**, and **the
+six LEDs come through it** — a ring of domes standing 3 mm proud of the white,
+which you can read from across the room without looking for a small light.
 
-The eyes are translucent plugs that pick up spill light from inside, so they
-glow faintly in whatever colour is currently showing.
+That white panel is its own printed part, and it is where the whole LED loom
+gets built — flat on the bench, with both ends of every hole in reach. The box
+behind it carries the dev board and snaps on. Neither takes a screw: the back
+cover clamps the pair into the window.
 
----
+The shape is not a CAD file. `PIXELS` at the top of
+[`hardware/generate.py`](hardware/generate.py) *is* the penguin, one character
+per voxel — edit it and the window, the eyes, the beak and the feet all
+follow. Every run measures what it built: manifoldness, plate fit, overhangs,
+bridge spans, thread engagement, and a boolean interference test against
+solids standing in for the dev board, a USB plug and the six LEDs.
+[docs/hardware/enclosure.md](docs/hardware/enclosure.md).
 
-## Bill of materials
+## The hardware
 
 If you own a 3D printer and a parts drawer, you probably have all of this.
 
-| Item | Qty | Notes |
+| Role | Part | Qty |
 |---|---|---|
-| ESP32-S3 dev board | 1 | Classic ESP32, C3 and C6 also supported |
-| LEDs — red, green, blue, yellow, orange, white | 1 each | 3 mm or 5 mm through-hole |
-| Resistors, 100–330 Ω | 6 | Values vary by colour — see [WIRING.md](hardware/WIRING.md) |
-| M3 heat-set inserts | 4 | 4.0 mm OD, 5 mm long |
-| M3 × 1/4" screws | 4 | Standard PC case screws — Micro Connectors `SCW-50M3` or any M3 × 6 mm pan head |
-| **USB cable that carries data** | 1 | Not a charge-only cable |
-| Zip tie, small | 1 | Strain relief on the cable |
-| Black filament | ~105 g | Body, back cover, beak |
-| White or natural filament | ~48 g | Chassis and eyes |
-| *Optional:* rubber feet, 11 mm | 4 | Recesses are in the base |
-
-Every screw in the build is the same one: **M3 × 1/4"**, four of them, into
-four M3 heat-set inserts, all on the back. The eyes and the beak press in.
-There is nothing else to source.
+| Controller | ESP32-S3 dev board — classic ESP32, C3 and C6 also supported | 1 |
+| Indicators | 5 mm through-hole LEDs: red, green, blue, yellow, orange, white | 6 |
+| Current limiting | Resistors, 100–330 Ω | 6 |
+| Fasteners | M3 heat-set inserts + M3 × 1/4" screws | 4 + 4 |
+| Power and data | **A USB cable that carries data** | 1 |
+| Structure | Six printed parts, ~105 g black and ~57 g white | — |
 
 Only one LED is ever lit at a time, so there's no capacitor, no level shifter
 and no external power supply. The whole thing runs off the USB port that's
 already carrying the serial data.
 
----
+Exact parts, voltages and limits: [docs/hardware/components.md](docs/hardware/components.md).
 
-## Build
+## Quick start
 
-### 1. Flash the firmware
-
-```bash
-pip install platformio
-cd firmware
-pio run -e esp32s3 -t upload
-pio device monitor              # expect: READY rookery 0.2.0 channels=6
-```
-
-On boot the firmware walks all six LEDs in order as a self-test. If one stays
-dark, that's a wiring fault — find it now, before anything is soldered.
-
-> **ESP32-S3 users:** a DevKitC-1 has two USB-C sockets. The default build
-> routes Serial to the **native USB** port (marked `USB`). If your board has
-> only one socket, that's the one. To use the `UART` bridge instead, build
-> `esp32s3-uart`.
-
-Other targets: `esp32dev`, `esp32c3`, `esp32c6`, `esp32s3-penguin` (adds the
-servo), `esp32s3-neopixel` / `esp32s3-rgb` (alternate LED hardware).
-
-### 2. Install the daemon
+Firmware is Arduino on [PlatformIO](https://platformio.org/); the host daemon
+is Python.
 
 ```bash
-cd host
-pip install -e .
+cd firmware && pio run -e esp32s3 -t upload   # flash
+cd ../host   && pip install -e .              # install the daemon
 
-rookery ports     # find your board (* marks likely candidates)
-rookery probe     # confirm it answers
-rookery test      # cycle green → yellow → red → blue
+rookery test              # cycle green → yellow → red → blue
+rookery install-hooks     # merge hooks into ~/.claude/settings.json
+rookery run               # leave it running
 ```
 
-If `test` cycles the colours, the hardware is finished. Everything after this
-is software.
+Then open Claude Code in another terminal and ask it something.
 
-**Linux:** for serial permissions, either `sudo usermod -aG dialout $USER`
-(then log out and back in), or install
-[`scripts/99-rookery.rules`](scripts/99-rookery.rules) for a stable
-`/dev/rookery` symlink that survives replugging.
+No hardware yet? `rookery run --simulate` logs state changes instead of
+driving a board, so you can verify the whole hook pipeline before anything is
+soldered.
 
-### 3. Wire it to Claude Code
+Full path — parts, print, wire, flash, hooks, assemble:
+**[docs/getting-started.md](docs/getting-started.md)**.
 
-```bash
-rookery install-hooks
-```
-
-Merges the hook entries into `~/.claude/settings.json`, backing up the original
-to `settings.json.bak` first. It only ever touches its own entries — your
-existing hooks are preserved — and re-running it is idempotent.
-
-Prefer to do it by hand? Paste [`claude/hooks.http.json`](claude/hooks.http.json)
-into your settings yourself. To undo: `rookery uninstall-hooks`.
-
-### 4. Run it
-
-```bash
-rookery run
-```
-
-Open Claude Code in another terminal and ask it something.
-
-Autostart on Linux:
-
-```bash
-mkdir -p ~/.config/systemd/user
-cp scripts/rookery.service ~/.config/systemd/user/
-systemctl --user daemon-reload
-systemctl --user enable --now rookery
-sudo loginctl enable-linger $USER    # survive logout
-```
-
-macOS: [`scripts/com.rookery.daemon.plist`](scripts/com.rookery.daemon.plist).
-
-### 5. Point it at your other work
-
-Claude Code is wired up by now, but the light is more useful when it also
-knows about the long-running things you actually wait on.
-
-**A local agent crew.** [Thousand Sunny](https://github.com/nhathout/sunny)
-already prints everything the light needs — `python -m jobs.status` emits one
-JSON snapshot with the queue, every crewmate's state, open briefs and
-blockers — so this needs no changes to sunny at all:
-
-```powershell
-.\scripts\poll-sunny.ps1
-```
-
-Red when a crewmate failed or a brief is waiting on you, green while a task
-runs, yellow when there is something to read. Sunny's `blockers` list is
-non-empty on a healthy system, so it is deliberately yellow rather than red;
-a light that is always on is a light you stop looking at.
-
-**Anything else on this machine:**
-
-```bash
-rookery watch --source bench -- python -m tools.bench_tools --runs 3
-```
-
-Green while it runs, red and staying red if it exits non-zero, yellow for a
-few minutes when it finishes.
-
-**Anything that prints JSON** can drive it the same way sunny does, by
-naming the fields that matter:
-
-```bash
-rookery poll --source ci --every 60 --json --command 'gh run list --json status' --working-if 'status==in_progress'
-```
-
-The recipes — including machines that can't reach you, and how to give a LAN
-machine a token: [docs/INTEGRATIONS.md](docs/INTEGRATIONS.md).
-
-### 6. Print the enclosure
-
-**The meshes are committed — you don't need to run anything.** The `.3mf`
-files in [`hardware/stl/`](hardware/stl/) are pre-arranged plates: open one in
-Bambu Studio and every part arrives laid out and correctly oriented.
-
-Five printed parts, in two colours:
-
-| Part | Filament | What it is |
-|---|---|---|
-| `body` | **Black** | The penguin — head, flippers, feet, and the window the belly fills |
-| `chassis` | **White** | The belly *and* the carrier: the LEDs, the board and the loom all mount inside it |
-| `back` | **Black** | Rear cover, four screws |
-| `eyes` | **White / natural** | Two plugs on a bar |
-| `beak` | **Black** | One 8 mm cube, press fit |
-
-Two plates, one filament change:
-
-| Plate | Filament | Parts |
-|---|---|---|
-| `plate1_black.3mf` | Black | `body`, `back`, `beak` |
-| `plate2_white.3mf` | White | `chassis`, `eyes` |
-
-Everything fits a **Bambu A1 mini** (180 × 180 × 180). If you have a 256 mm
-machine, `python3 generate.py --plate 256` re-packs the set.
-
-3 walls, 15% infill, 0.2 mm layers, and **no supports on any part** — nothing
-overhangs past 45°, and `generate.py` measures that rather than assuming it.
-
-**The chassis must be white or natural filament.** Its front face is the only
-thing between the LEDs and you; a dark filament gives you a dark rectangle.
-
-To change dimensions, edit the parameters at the top of
-[`hardware/generate.py`](hardware/generate.py) and re-run it:
-
-```bash
-pip install trimesh manifold3d shapely numpy
-cd hardware
-python3 generate.py                    # rewrites stl/
-python3 generate.py --insert-od 4.2    # if your inserts are fatter
-python3 generate.py --led-d 3.0        # 3 mm LEDs instead of 5 mm
-python3 generate.py --leds ring        # one WS2812B ring instead of six LEDs
-```
-
-Every run checks itself: manifoldness after welding, plate fit, unsupported
-overhang area, bridge spans, screw thread engagement, LED-to-board clearance,
-and a boolean interference test of the assembled parts against each other and
-against a solid standing in for the dev board. A bad parameter fails loudly
-instead of at the printer.
-
-### 7. The shape is a pixel map
-
-`PIXELS` at the top of `generate.py` *is* the penguin, one character per
-voxel:
-
-```python
-PIXELS = [
-    "..####..",   # 0   crown
-    ".######.",   # 1   eyes
-    ".######.",   # 2   beak
-    ".######.",   # 3   neck
-    "########",   # 4   shoulders, window top
-    "########",   # 5   flippers
-    ...
-```
-
-Edit it and the whole enclosure follows — the window, the eyes, the beak and
-the feet are all addressed by grid coordinates, and the engraved pixel grid
-regenerates to match. `PITCH` is the voxel size, 10 mm.
-
-The belly is plain by default: 4 × 6 lit pixels. You can cut a glyph into it
-instead — `--face smiley`, `--face chick`, or `--face text --text "BUSY"` —
-which thins that area to 0.9 mm so it glows brighter than the panel around
-it. It's a print-time choice rather than a swap, because the belly is also
-the chassis.
-
-Full print-and-assemble walkthrough, including the heat-set insert technique
-and the order to do things in: [`hardware/stl/README.md`](hardware/stl/README.md).
-Circuit and resistor values: [`hardware/WIRING.md`](hardware/WIRING.md).
-
----
-
-## Usage
-
-```bash
-rookery run --brightness 90    # dimmer, for a dark room
-rookery run --simulate         # log state changes, no hardware needed
-rookery status                 # what is driving the light right now?
-rookery set needs_you          # force a state (stop the daemon first)
-rookery print-hooks            # dump the hook JSON to stdout
-```
-
-Driving it from something that isn't Claude Code:
-
-```bash
-# wrap a long job: green while it runs, red if it fails, yellow when it's done
-rookery watch --source weekly -- python -m jobs.weekly_run
-
-# ask something that prints JSON what it's doing, once a minute
-rookery poll --source sunny --every 60 --json \
-  --command 'cd /d C:\dev\sunny && .venv\Scripts\python.exe -m jobs.status' \
-  --needs-you-if 'crew[*].state==failed' --working-if 'queue.running>0'
-
-# report from a shell script, anywhere
-rookery notify needs_you --source deploy --detail 'smoke test failed'
-rookery notify clear     --source deploy
-```
-
-Full reference, including reaching machines that can't reach you:
-[docs/INTEGRATIONS.md](docs/INTEGRATIONS.md).
-
-`--simulate` is genuinely useful: you can verify the whole hook pipeline before
-the hardware exists.
-
-Six LEDs from a parts drawer will never be balanced. Trim them live over serial
-with `GAIN <colour> <0-255>`, then bake the values you settle on into
-`build_flags` — `env:esp32s3-tuned` in `platformio.ini` exists for that.
-`WAG` triggers the penguin manually.
-
-Full serial reference: [`docs/PROTOCOL.md`](docs/PROTOCOL.md).
-
----
-
-## Troubleshooting
-
-**Board doesn't appear in `rookery ports`** — 90% of the time it's a
-charge-only USB cable. Then it's the wrong socket on an S3 (native vs UART).
-Then it's a missing CP210x/CH340 driver on macOS or Windows.
-
-**Light never changes** — run `rookery status` while a session is live. If
-sessions are listed, the problem is the serial link; if not, it's the hooks.
-Run `/hooks` inside Claude Code to confirm they registered.
-
-**Light stuck on green** — the daemon died. The firmware notices after 30 s and
-switches to the orange blink.
-
-**One LED never lights during the boot self-test** — that channel is miswired,
-or the LED is in backwards. The long leg is the anode and goes to the resistor.
-
-**Blue or white looks dead or very faint** — expected, not a fault. Their
-forward voltage is nearly the full 3.3 V a GPIO can supply, so they only get
-about 2 mA where the others get 7. The firmware already compensates with higher
-PWM duty; [`hardware/WIRING.md`](hardware/WIRING.md) has two stronger fixes.
-
-**The belly is patchy rather than even** — six LEDs 17.4 mm behind a
-40 × 60 mm panel will show where they are. The white chamber and the engraved
-pixel grid are there to fight that, but the cheapest fix by far is to **sand
-the dome of each LED flat on 400-grit** until it's frosted. That turns a ~20°
-beam into a wide scatter and does more than either of the other two.
-
-**Belly is dim overall** — wrong filament. The chassis needs white or natural
-PLA. Also check `BRIGHT` isn't turned down.
-
-**Eyes barely glow** — expected. They're lit by spill light through a gap in
-the crown of the reflector, so they're subtle by design and best seen in a dim
-room. Printing them in natural or clear filament rather than white helps a
-lot.
-
-**The light is green but no agent is running** — something else is holding
-it. `rookery status` lists every session and source behind the current
-colour, with a `detail` line saying what each one is.
-
-**A source is stuck on** — sources expire on their own (180 s by default,
-`--ttl` to change), but a job that reported `needs_you` deliberately holds
-for an hour so you actually see it. `rookery notify clear --source <name>`
-to drop it now.
-
-**`rookery poll` asks for a password every minute** — give SSH a shared
-connection: `ControlMaster auto` + `ControlPersist 8h` in `~/.ssh/config`,
-then authenticate once by hand. Details in
-[docs/INTEGRATIONS.md](docs/INTEGRATIONS.md).
-
-**Hook errors in the transcript** — the daemon isn't running. HTTP hooks report
-a connection failure as a non-blocking error: visible, harmless, and it won't
-interrupt your work. Switch to the command-hook variant if it bothers you; that
-one exits 0 silently.
-
----
-
-## Extending it
+## Driving it from something else
 
 Nothing below the hook layer is Claude Code-specific. Three ways in, in
 increasing order of effort:
@@ -395,22 +127,29 @@ The daemon also still accepts any POST to `/hook` carrying a
 a matter of mapping that tool's events onto the four states in
 [`host/rookery/state.py`](host/rookery/state.py).
 
-Below that, the serial protocol is plain text, so you can drive the light
-from a shell script, a CI webhook, or a build system without going near the
-daemon at all:
+Below that, the serial protocol is plain text, so you can drive the light from
+a shell script, a CI webhook, or a build system without going near the daemon
+at all. Recipes: [docs/integrations.md](docs/integrations.md). Serial
+reference: [docs/protocol.md](docs/protocol.md).
 
-```bash
-printf 'STATE needs_you
-' > /dev/rookery
-```
+## Documentation
 
-`LED <colour> <0-255>` addresses any single LED directly if you want to
-invent your own signals.
-
-Full integration guide: [docs/INTEGRATIONS.md](docs/INTEGRATIONS.md).
-Serial reference: [docs/PROTOCOL.md](docs/PROTOCOL.md).
-
----
+| Goal | Doc |
+|---|---|
+| Build end-to-end | [docs/getting-started.md](docs/getting-started.md) |
+| Parts and limits | [docs/hardware/components.md](docs/hardware/components.md) |
+| Pin map, per board | [docs/hardware/pinout.md](docs/hardware/pinout.md) |
+| Circuit and resistor values | [docs/hardware/wiring.md](docs/hardware/wiring.md) |
+| What to print, and how | [docs/hardware/printing.md](docs/hardware/printing.md) |
+| How it goes together | [docs/hardware/assembly.md](docs/hardware/assembly.md) |
+| Changing the model | [docs/hardware/enclosure.md](docs/hardware/enclosure.md) |
+| Every command and flag | [docs/cli.md](docs/cli.md) |
+| Driving it from anything | [docs/integrations.md](docs/integrations.md) |
+| Serial protocol | [docs/protocol.md](docs/protocol.md) |
+| When it misbehaves | [docs/troubleshooting.md](docs/troubleshooting.md) |
+| Adding a servo or motor | [docs/hardware/motion.md](docs/hardware/motion.md) |
+| Cost, and what selling one would take | [docs/production.md](docs/production.md) |
+| Full index | [docs/README.md](docs/README.md) |
 
 ## Repository layout
 
@@ -420,18 +159,10 @@ host/rookery/     the daemon: hook endpoint, session registry, serial link
 claude/           hook configuration for Claude Code
 hardware/
   generate.py     parametric model generator -> STL + per-colour 3MF plates
-  stl/            printable meshes, plates, and the assembly guide
-  WIRING.md       circuit, resistor values, where the LEDs sit
-  MOTOR.md        power budget, and adding a motor
-  PRODUCTION.md   what it costs to build, and to sell
-scripts/          systemd unit, launchd plist, udev rules,
-                  poll-sunny.ps1
-docs/
-  PROTOCOL.md     serial protocol reference
-  INTEGRATIONS.md driving the light from anything else
+  stl/            printable meshes and plates, all committed
+scripts/          systemd unit, launchd plist, udev rules, poll-sunny.ps1
+docs/             everything above, and the index at docs/README.md
 ```
-
----
 
 ## Credit
 
@@ -441,7 +172,8 @@ would be more fun than buying it.
 
 This is an independent implementation: its own firmware, daemon and enclosure,
 six discrete LEDs instead of a diffused RGB beacon, a penguin-shaped
-two-colour voxel enclosure whose entire front is a pixelated backlit panel, and a hook-driven approach rather than session-file
+two-colour voxel enclosure whose whole front is a pixelated panel with the
+LEDs coming through it, and a hook-driven approach rather than session-file
 watching. If you'd rather have a finished product in a nice case than a weekend
 of soldering, go buy theirs.
 
@@ -449,4 +181,5 @@ Not affiliated with Anthropic, or with Claw Light.
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT — see [LICENSE](LICENSE). That covers the firmware, the daemon, the
+documentation, and the generated meshes in `hardware/stl/`.

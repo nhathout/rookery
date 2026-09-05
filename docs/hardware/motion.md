@@ -1,10 +1,14 @@
 # Power budget & adding a motor
 
 > **The shipped enclosure has no servo mount.** The current design is
-> deliberately static — body, chassis, back, eyes, beak. This document
+> deliberately static — body, belly, chassis, back, eyes, beak. This document
 > stays because the power arithmetic matters for any expansion, and because
 > the firmware still carries optional servo support if you want to add a
 > moving part of your own.
+
+The circuit the light itself runs on, and its power story, are in
+[wiring.md](wiring.md) and [README.md](README.md). This page is about what
+happens when you add something that moves.
 
 ## Short answer
 
@@ -129,11 +133,13 @@ software: pull the horn off the spline, centre the servo with `WAG`, and press
 the horn back on pointing where you want.
 
 You'll need to make room for it yourself — add a pocket to `build_back()` in
-`generate.py`, or mount the servo outside the body. There is room: the body
-is 48 mm deep, the chassis only uses the front 34 mm of that, and the 14 mm
-behind it is empty on purpose. The interference check in `generate.py` will
-tell you straight away if whatever you add collides with the chassis or the
-board.
+[`generate.py`](../../hardware/generate.py), or mount the servo outside the body. The room is not behind
+the white parts, which reach to within 5 mm of the back plane: it is above
+and below them. The head cavity is about 55 x 38 x 48 mm less the top of the
+dev board, and the base cavity about 55 x 18 x 48 mm less the USB plug. Both
+are empty on purpose and reachable with the cover off. The interference
+check in `generate.py` will tell you straight away if whatever you add
+collides with a printed part, the board or the plug.
 
 ## What the firmware does with a servo
 
@@ -189,3 +195,11 @@ USB is also connected unless you're sure your board has proper diode isolation
 
 For this project, none of that applies. One servo, one USB cable, one
 capacitor.
+
+---
+
+## Next
+
+- The servo's build env and pin, per board: [pinout.md](pinout.md)
+- The part itself: [components.md](components.md#micro-servo)
+- What `WAG` does over serial: [../protocol.md](../protocol.md)

@@ -9,10 +9,13 @@ the shape reads as a low-res sprite standing on your desk.
     python3 generate.py
 
 THREE PARTS THAT MATTER
-    chassis   white. A hollow box. Its front face IS the belly -- the panel
-              that glows -- and everything else bolts inside it: the LED
-              shelf, the dev board, the cable. Build the whole electrical
-              assembly on this one part, on the bench, then drop it in.
+    chassis   white. A hollow box. Its front face IS the belly, and the
+              six LEDs come THROUGH it: the front wall is thinned to a well
+              from behind and bored, so each LED drops in from the back and
+              its dome stands proud of the panel. Everything else -- the dev
+              board, the resistors, the loom -- mounts inside it and stays
+              out of sight. Build the whole electrical assembly on this one
+              part, on the bench, then drop it in.
     body      black. The voxel penguin around it: head, flippers, feet, and
               a window the chassis's face fills flush. Hollow, open at the
               back, with room behind the chassis for anything you add later.
@@ -22,23 +25,30 @@ THREE PARTS THAT MATTER
 
 FASTENERS
     Every screw in the build is the same one: M3 x 1/4" (6.35 mm), the
-    standard PC case screw -- e.g. Micro Connectors SCW-50M3. Six of them,
-    into six M3 heat-set inserts. Nothing else.
+    standard PC case screw -- e.g. Micro Connectors SCW-50M3. Four of them,
+    into four M3 heat-set inserts. Nothing else.
 
 PRINT ORIENTATION
     Both large parts print open-side-down, so the whole voxel silhouette
     lies flat in the build plate's XY plane and the pixel steps never become
-    overhangs. The chassis prints belly-face-down: the glowing face lands
+    overhangs. The chassis prints belly-face-down: the visible face lands
     against the plate, which is the best surface it can get, and every
-    mount inside it grows upward off that face.
+    mount inside it grows upward off that face -- which is why nothing in
+    this file ever stands on the FRONT of the shelf.
 
 SELF-CHECKS
     Every run measures what it just built and exits non-zero if anything is
     wrong: manifoldness after welding at file precision, plate fit,
     unsupported downward-facing area, bridge spans, screw thread
-    engagement, LED-to-board clearance, and a boolean interference test of
-    the assembled parts against each other and against a solid standing in
-    for the dev board. A bad parameter should fail here, not at the printer.
+    engagement, the LED seat arithmetic -- how much plastic is left in
+    front of each flange, how much dome that leaves proud of the belly, how
+    much ledge is left to stop it -- zero-thickness sheets left behind by
+    two booleans meeting on one plane, a swept test that the belly can
+    actually be pushed into the chassis rather than merely fitting once it
+    is there, and a boolean interference test of the assembled parts
+    against each other and against solids standing in for the dev board, a
+    USB plug and the six LEDs. A bad parameter should fail here, not at the
+    printer.
 """
 from __future__ import annotations
 
@@ -118,6 +128,7 @@ FOOT_OUT = 10.0                  # one voxel forward
 CH_WALL = 1.8
 CH_D = 45.0
 GLYPH_FLOOR = 0.9                # material left where an optional glyph glows
+GLYPH_D = 1.0                    # ...or engraved, when nothing lights it
 SMILEY_SCALE = 2.2               # the stock smiley was drawn for a smaller window
 
 # -- dev board (ESP32-S3-DevKitC-1), upright, USB pointing down. MEASURE YOURS.
@@ -137,30 +148,96 @@ BOARD_Y = 32.0                   # front face of the board, from the belly face
 # explicitly: a plug that does not fit is a build you cannot finish.
 PLUG_W, PLUG_T, PLUG_L = 13.0, 9.0, 22.0
 
-# -- LED shelf inside the chassis
+# -- the LEDs. They come THROUGH the belly, not from behind it.
+#
+# The front of the chassis is WALL + FLARE + CH_WALL of solid white PLA --
+# the plug, the 45-degree seat and the box's own front wall, stacked, which
+# is 8.2 mm. Nothing shines through 8.2 mm of PLA. So the wall is thinned
+# from behind to LED_SEAT over the cluster, and bored LED_D through what is
+# left: each LED drops into that well from the back, its flange lands on the
+# back of the plate, and the dome stands LED_PROUD out of the belly where
+# you can actually see it.
 LED_D = 5.0
-LED_CLEAR = 0.25
-LED_BODY = 8.6                   # 5 mm LED, dome tip to flange
-LED_CIRCLE_D = 17.0
-LED_LEAD = 4.0                   # straight lead behind the shelf before you
+LED_CLEAR = 0.2                  # per side, bore to LED body
+LED_BODY = 8.6                   # 5 mm LED, dome tip to flange. --led-d 3.0
+LED_BODY_3MM = 5.8               # switches to this one.
+LED_FLANGE_D = 5.9               # the rim at the base of the LED, and the
+                                 # only thing stopping it going out the
+                                 # front. It has to be wider than the bore.
+LED_PROUD = 3.0                  # dome standing out of the belly. A 5 mm
+                                 # LED's dome is 2.5 mm, so this shows all
+                                 # of it plus a little of the barrel.
+LED_CIRCLE_D = 17.0              # sized to the 10 mm grid: at this diameter
+                                 # no LED lands on an engraved groove except
+                                 # the vertical centre line, and two LEDs on
+                                 # the centre line read as deliberate.
+LED_LEAD = 4.0                   # straight lead behind the flange before you
                                  # bend them outward. Nothing may occupy it.
 LED_COUNT = 6
+
+# -- the shelf. It carries the dev board; the LEDs left it for the belly.
 SHELF_Y = 23.0                   # front face of the shelf, from the belly face
 SHELF_T = 3.0
-SHELF_GAP = 7.0                  # wire route past the shelf, one side
+SHELF_GAP = 7.0                  # loom window through the shelf, each side
 SHELF_DROP = 1.75                # the shelf stops this far above the USB
                                  # connector, so the plug has a clear run
                                  # down past it and out through the floor
-MOUNT_DZ = (-17.0, 20.0)         # board posts and tabs, either side of the
-                                 # LED cluster. Nothing may stand in front
-                                 # of an LED.
+MOUNT_DZ = (-17.0, 20.0)         # board posts and tabs, above and below the
+                                 # board's centre
+TAB_Z = 12.0                     # tab height, and the band of shelf each
+                                 # pair of mounts needs left solid
+SHELF_WIN_CLEAR = 2.0            # margin between a loom window and a band
+RIB_T = 4.0                      # the rib down the middle of the loom
+RIB_Z = 50.0                     # cavity. It halves the shelf's bridge and
+                                 # it is the only way to support the middle
+                                 # of a plate that spans an open box.
+
+# -- the joint. The belly is a separate part because loading six LEDs and
+# soldering thirteen joints at the bottom of a 45 mm box is a miserable job:
+# flat on the bench, with both ends of every hole in reach, it is an easy
+# one. The two halves locate on a lip and hold each other with two snap
+# tongues cut out of that lip; the back cover still does the real clamping.
+LIP_T = 1.4                      # lip wall, and the tongue's thickness
+LIP_D = 9.0                      # how deep it reaches into the box, and the
+                                 # cantilever length the tongues get
+LIP_CLEAR = 0.2                  # per side, lip to the box's inner wall
+SNAP_W = 10.0                    # tongue width
+SNAP_SLOT = 1.6                  # the slot either side that frees it
+BARB = 0.7                       # BARB - LIP_CLEAR is what actually catches
+BARB_RUN = 1.6                   # ramp length off the tip, the lead-in
+BARB_CLEAR = 0.15                # slack between barb and window
+PLA_STRAIN = 0.02                # permissible strain, for the snap check
+SLOT_RUNOUT = 6.0                # how far past the board the roof and floor
+                                 # slots run before they stop
+
+# -- loom mounts, standing on the inside of the belly either side of the LED
+# well: a channel the resistors press into, and arches to tie the bundle
+# down. Everything here grows BACKWARD off the belly, which is the only
+# direction that prints without support -- the belly goes on the plate
+# face-down, so backward is up. Discrete LEDs only: a WS2812B ring has three
+# wires and no resistors, and wants the chamber left clear.
+RES_SLOT_W = 3.0                 # an axial 1/4 W resistor, bare or in thin
+RES_SLOT_D = 3.4                 # heat-shrink, pressed in from behind
+RES_WALL = 0.8                   # channel wall
+RES_FLOOR = 1.2                  # channel floor, onto the belly
+RES_LEN = 32.0                   # channel length: three resistors end to end
+RES_X = 17.0                     # channel centre, in the strip beside the
+                                 # well and right by the shelf gap the wires
+                                 # drop through
+TIE_SPAN, TIE_H = 6.0, 3.2       # the tunnel a cable tie passes through
+TIE_LEG, TIE_BAR, TIE_D = 2.0, 2.0, 3.0
+TIE_X, TIE_DZ = 14.5, 20.0       # an arch above and below each channel
 
 # -- alternative: one WS2812B ring instead of six discrete LEDs. The firmware
 # already has this backend (env:esp32s3-neopixel). Three wires instead of
-# thirteen -- see PRODUCTION.md for why that matters.
+# thirteen -- see docs/production.md for why that matters.
 LEDS = "discrete"                # or "ring"
 RING_OD, RING_ID, RING_T = 37.0, 23.0, 2.2   # MEASURE YOURS
 RING_CLEAR = 0.4
+RING_WINDOW_D = 34.0             # a ring cannot poke through anything, so
+RING_FLOOR = 1.2                 # the belly is thinned to this over it
+                                 # instead -- 8.2 mm of PLA was never going
+                                 # to pass light, whatever was behind it.
 
 # -- cable exit, a slot in the rear cover
 CABLE_W, CABLE_H = 15.0, 10.0
@@ -182,6 +259,7 @@ BOSS_D = 9.0
 BOSS_H = 11.0
 
 # derived
+FRONT_WALL = WALL + FLARE + CH_WALL   # solid PLA in front of the chamber
 INSERT_BORE = INSERT_OD - INSERT_GRIP
 INSERT_DEPTH = INSERT_LEN + 0.6
 BORE_DEPTH = INSERT_DEPTH + SCREW_RUNOUT
@@ -502,17 +580,51 @@ def build_body():
     return inter(body, cube(400, 400, 400, 0, 200, -200))
 
 # ---------------------------------------------------------------------------
-# CHASSIS -- the white box. This is the belly and the carrier in one part.
+# THE WHITE PARTS -- belly and chassis
 #
-# Printed belly-face-down, so the face that glows lands against the build
-# plate and every mount inside grows upward off it. Depth, from that face:
+# One box, split in two along the plane where its front wall ends. Both come
+# out of the same solid, so the joint is a cut through one piece of geometry
+# rather than two outlines somebody has to keep in step by hand.
 #
+#   belly     the front wall, and everything the LEDs need: the well, the
+#             six bores, the resistor channels, the tie arches. A flat plate
+#             you build the whole optical assembly on, on the bench, with
+#             both ends of every hole in reach and nothing in the way.
+#   chassis   the box behind it: four walls, the shelf, the dev board.
+#
+# Both print with the joint plane the right way up already: the chassis
+# lands mating-face-down on the plate and the belly lands LED-face-down, so
+# its mating face points up with the lip standing above it. They go together
+# in the orientation they printed in -- neither part is ever turned over.
+# The belly's mating face is NOT the top of that part; it is 8.2 mm up, and
+# the 8.2 mm below it is the panel that ends up outside the box.
+#
+# They locate on a lip and hold each other with two snap tongues. The back
+# cover's pillars then clamp the pair forward into the body's window, which
+# is what held the one-piece version too. Still no screws.
+#
+# Depth, from the belly face:
+#
+#    -3.0 .. 0.0    six LED domes, out in front of the belly
 #     0.0 .. 2.4    the plug -- fills the body's window, flush with the skin
 #     2.4 .. 6.4    45-degree flare out to the flange. Self-supporting, and
 #                   it cannot pass forward through the window.
-#     6.4 .. 34.0   box walls
-#    15.0 .. 18.0   the LED shelf, spanning the box
-#    18.0 .. 21.5   board posts standing on the shelf
+#     6.4 .. 8.2    the box's own front wall. Those three stack into 8.2 mm
+#                   of solid PLA, and all of it is the belly part.
+#
+#     0.0 .. 5.6    the LED plate: what the well leaves of that wall, with
+#                   six bores through it
+#     5.6 .. 8.2    the LED well, open toward the back -- an open pocket in
+#                   this print orientation, so nothing has to bridge it
+#     8.2 .. 12.8   resistor channels and cable-tie arches
+#     8.2 .. 17.2   the locating lip, and the two snap tongues cut out of it
+#
+#  == 8.2 ===================== THE JOINT ====================================
+#
+#     8.2 .. 45.0   the chassis box: four walls, CH_WALL thick
+#    23.0 .. 26.0   the shelf, spanning it
+#    26.0 .. 32.0   board posts standing on the BACK of the shelf
+#    32.0 .. 41.6   the dev board and whatever stands on it
 # ---------------------------------------------------------------------------
 
 _WB = span(*WINDOW).bounds
@@ -523,6 +635,32 @@ BOARD_CZ = CH_CZ + BOARD_RISE
 # The LED cluster sits dead centre on the belly. It is a parameter because
 # it is the one thing worth nudging by eye once you have printed one.
 LED_CZ = CH_CZ
+Y_JOINT = DEPTH - FRONT_WALL     # where the belly ends and the box begins
+
+
+def led_seat() -> float:
+    """Plastic left in front of the flange -- what the LED pokes through.
+
+    The flange stops on the back of it, so this sets the protrusion for you:
+    seat plus proud is the whole LED. Deep enough to hold one straight, and
+    a good deal deeper than the 3 mm shelf that used to hold them."""
+    return LED_BODY - LED_PROUD
+
+
+def led_well_d() -> float:
+    """The pocket cut into the back of the front wall to leave that seat.
+
+    Wide enough that every flange lands inside it with room to spare, and
+    that six of them can be soldered without crowding."""
+    return LED_CIRCLE_D + LED_FLANGE_D + 4.0
+
+
+def led_xy(i: int):
+    """LED i, as (x, z). Offset half a step so no LED sits at the top of
+    the circle where the grid's own horizontal line already runs."""
+    a = 2 * math.pi * i / LED_COUNT + math.pi / 6
+    return (LED_CIRCLE_D / 2 * math.cos(a),
+            LED_CZ + LED_CIRCLE_D / 2 * math.sin(a))
 
 
 def ch_rect(grow: float = 0.0) -> Polygon:
@@ -535,6 +673,67 @@ def ch_rect(grow: float = 0.0) -> Polygon:
     """
     b = window_rect(-WINDOW_CLEAR).bounds
     return sbox(b[0] - grow, b[1], b[2] + grow, b[3])
+
+
+def ch_bounds():
+    """Outer and inner footprints of the box, each as (x0, z0, x1, z1)."""
+    ob = ch_rect(FLARE).bounds
+    ib = (ob[0] + CH_WALL, ob[1] + CH_WALL, ob[2] - CH_WALL, ob[3] - CH_WALL)
+    return ob, ib
+
+
+def shelf_gaps():
+    """Where the shelf is cut through for the loom to pass.
+
+    WINDOWS, not slots that run out to the wall. This matters more than it
+    looks: the shelf is a horizontal plate over an open box, and the walls
+    are the only thing it can hang from. Cut the route all the way to the
+    wall and the plate stops touching that wall down its whole length --
+    with a route down both sides it ends up dangling off the top wall
+    alone, which is a 53 mm overhang, not a bridge, and no amount of "no
+    supports" in the print profile will save it.
+
+    So the routes stop short of the two bands where the board's posts and
+    tabs stand, and the shelf stays welded to both side walls everywhere
+    else. Both sides for discrete LEDs; one for a ring, whose pocket wants
+    the material on the other."""
+    _, ib = ch_bounds()
+    z0 = CH_CZ + MOUNT_DZ[0] + TAB_Z / 2 + SHELF_WIN_CLEAR
+    z1 = CH_CZ + MOUNT_DZ[1] - TAB_Z / 2 - SHELF_WIN_CLEAR
+    wins = [sbox(ib[2] - SHELF_GAP, z0, ib[2], z1)]
+    if LEDS != "ring":
+        wins.append(sbox(ib[0], z0, ib[0] + SHELF_GAP, z1))
+    return wins
+
+
+def shelf_rib():
+    """The rib down the middle of the loom cavity, under the shelf.
+
+    It stands on the joint plane -- the face that goes on the build plate --
+    and runs back to the shelf, so it prints as a plain wall off the plate
+    and halves what the shelf has to bridge. It clears the belly's lip at
+    both ends and everything the belly stands in that cavity, which all
+    lives outboard of it.
+
+    Not in ring mode: there the middle of the shelf is a ring pocket, and a
+    rib in front of it would be a rib in front of the light."""
+    if LEDS == "ring":
+        return []
+    # Overlapped into the shelf at one end and run past the joint plane at
+    # the other: the split trims it, so it butts against neither.
+    y0, y1 = DEPTH - SHELF_Y - OVERLAP, Y_JOINT + 2.0
+    rib = cube(RIB_T, y1 - y0, RIB_Z, 0.0, (y0 + y1) / 2, LED_CZ - RIB_Z / 2)
+    # Two of the six LEDs sit on the centre line, and their leads come
+    # straight back into where the rib starts. Notch it for them: the rib
+    # loses 2 mm of its 15, and the leads keep the clear run they are
+    # promised. Without this the rib is quietly parked on two LEDs.
+    lead = LED_D + 2 * LED_CLEAR + 1.0
+    y_lo = DEPTH - led_seat() - LED_LEAD - 0.5
+    cuts = [cube(RIB_T + 2 * EPS, y1 + EPS - y_lo, lead, 0.0,
+                 (y_lo + y1 + EPS) / 2, z - lead / 2)
+            for x, z in (led_xy(i) for i in range(LED_COUNT))
+            if abs(x) < (RIB_T + lead) / 2] if y_lo < Y_JOINT else []
+    return [diff(rib, *cuts) if cuts else rib]
 
 
 def yflare(poly: Polygon, y_front: float, run: float, steps: int = 0):
@@ -552,42 +751,241 @@ def yflare(poly: Polygon, y_front: float, run: float, steps: int = 0):
     return stand(union(*slabs), y_front)
 
 
-def build_chassis(face: str = "blank", text: str = "AFK"):
-    y_face = DEPTH                      # flush with the body's front skin
-    y_flange = y_face - WALL            # where the flare starts
+def white_solid():
+    """The whole white part as one SOLID lump, before anything is hollowed
+    or split. Both printed parts are cut out of this, which is the point:
+    their mating faces are two halves of one plane and cannot drift apart
+    when somebody changes a wall thickness.
+
+    Deliberately not hollowed here. The cavity has to end somewhere, and if
+    it ends on Y_JOINT then two boolean operations land on the same plane --
+    see the note on `half()`."""
+    y_face = DEPTH
+    y_flange = y_face - WALL
     y_back = y_face - CH_D
-
-    ob = ch_rect(FLARE).bounds                       # outer footprint
-    ib = (ob[0] + CH_WALL, ob[1] + CH_WALL, ob[2] - CH_WALL, ob[3] - CH_WALL)
-
     plug = yprism(ch_rect(), y_face, WALL)
     flare = yflare(ch_rect(), y_flange, FLARE)
     shell = yprism(ch_rect(FLARE), y_flange - FLARE,
                    (y_flange - FLARE) - y_back)
-    # A real box: walls on all four sides, not just the two the flare
-    # happened to leave behind. The board and the plug get their own slots
-    # through the roof and the floor further down.
-    inner = yprism(sbox(*ib), y_flange - FLARE - CH_WALL,
-                   (y_flange - FLARE) - y_back + 2.0)
+    return union(plug, flare, shell)
 
-    ch = diff(union(plug, flare, shell), inner)
 
-    # --- LED shelf. Full width, wall to wall, and it stops short of the USB
-    # connector at the bottom so the plug has a clear run past it. The wire
-    # gap down one side is how the loom gets through.
+def box_cavity():
+    """The hollow inside the chassis, running PAST the joint plane.
+
+    A real box: walls on all four sides, not just the two the flare happened
+    to leave behind. The board and the plug get their own slots through the
+    roof and the floor further down."""
+    _, ib = ch_bounds()
+    return yprism(sbox(*ib), Y_JOINT + 2.0, CH_D + 6.0)
+
+
+def half(front: bool):
+    """A half-space either side of the joint, to cut the solid in two.
+
+    This is the ONLY thing allowed to cut at Y_JOINT. Two booleans landing
+    on the same plane leave a zero-thickness sheet across it -- a face and
+    its own reversed twin. That mesh is still watertight, still winds
+    consistently, still has the right volume and still counts as one lump,
+    so nothing else in this file notices; it just renders as flickering
+    triangles and slices into a membrane that should not exist. Everything
+    else therefore overlaps the joint plane and lets this cut do the work.
+    `flaps()` measures it, because the day somebody forgets is the day it
+    comes back."""
+    d = 200.0
+    return cube(400, 400, 400, 0.0, Y_JOINT + (d if front else -d), -d)
+
+
+# ---------------------------------------------------------------------------
+# THE JOINT -- a lip that locates, and two tongues that hold
+# ---------------------------------------------------------------------------
+
+def lip_rect() -> Polygon:
+    _, ib = ch_bounds()
+    return sbox(ib[0] + LIP_CLEAR, ib[1] + LIP_CLEAR,
+                ib[2] - LIP_CLEAR, ib[3] - LIP_CLEAR)
+
+
+def snap_reach() -> float:
+    """How far the barb stands proud of the wall it catches on -- which is
+    also how far the tongue has to bend to get past it."""
+    return BARB - LIP_CLEAR
+
+
+def snap_allowed() -> float:
+    """How far a cantilever that shape can bend and still come back.
+
+    Straight-beam snap-fit arithmetic: y = (2/3) e L^2 / t, with e the
+    material's permissible strain."""
+    return (2 / 3) * PLA_STRAIN * LIP_D ** 2 / LIP_T
+
+
+def belly_joint():
+    """The lip and its snap tongues. Returns (adds, cuts) for the belly.
+
+    The tongues are cut out of the lip rather than added to it: a slot
+    either side turns a stiff closed loop into two cantilevers that can
+    actually bend the snap_reach() they are asked to."""
+    outer = lip_rect()
+    adds = [yprism(outer.difference(outer.buffer(-LIP_T)),
+                   Y_JOINT + OVERLAP, LIP_D + OVERLAP)]
+    cuts = []
+    x0 = outer.bounds[2]
+    y_tip = Y_JOINT - LIP_D
+    for sx in (-1, 1):
+        for lz in (-1, 1):
+            cuts.append(cube(LIP_T + 1.0, LIP_D + 2.0, SNAP_SLOT,
+                             sx * (x0 - LIP_T / 2), Y_JOINT - LIP_D / 2,
+                             LED_CZ + lz * (SNAP_W + SNAP_SLOT) / 2
+                             - SNAP_SLOT / 2))
+        # the barb, drawn in plan: a ramp off the tip out to BARB, then a
+        # flat face pointing forward, which is what actually holds
+        poly = Polygon([(sx * (x0 - 0.4), y_tip),
+                        (sx * (x0 + BARB), y_tip + BARB_RUN),
+                        (sx * (x0 - 0.4), y_tip + BARB_RUN)]).buffer(0)
+        adds.append(solid(poly, SNAP_W, LED_CZ - SNAP_W / 2))
+    return adds, cuts
+
+
+def box_joint():
+    """The two windows in the box's side walls that the barbs drop into."""
+    ob, ib = ch_bounds()
+    y_tip = Y_JOINT - LIP_D
+    y_lo, y_hi = y_tip - 0.5, y_tip + BARB_RUN + BARB_CLEAR
+    return [cube(3 * CH_WALL, y_hi - y_lo, SNAP_W + 1.0,
+                 sx * (ib[2] + ob[2]) / 2, (y_lo + y_hi) / 2,
+                 LED_CZ - (SNAP_W + 1.0) / 2)
+            for sx in (-1, 1)]
+
+
+def loom_mounts():
+    """Somewhere for the resistors and the loom to live. Returns adds, cuts.
+
+    A channel down each side of the LED well takes three axial resistors end
+    to end, and there is an arch above and below each one for a cable tie.
+    Both open toward the back -- which is the side the LED leads come from,
+    and the side that faces up on the plate, so they print as plain slots
+    and load the way you would expect."""
+    block_h = RES_FLOOR + RES_SLOT_D
+    adds, cuts = [], []
+
+    def on_wall(wx, dy, hz, x, z0):
+        """A block standing on the inside of the front wall, dy deep.
+
+        Overlapped into the wall rather than landing exactly on it: a
+        coincident pair of faces looks watertight until someone welds it."""
+        return cube(wx, dy + OVERLAP, hz, x,
+                    Y_JOINT + OVERLAP / 2 - dy / 2, z0)
+
+    for sx in (-1, 1):
+        adds.append(on_wall(RES_SLOT_W + 2 * RES_WALL, block_h, RES_LEN,
+                            sx * RES_X, LED_CZ - RES_LEN / 2))
+        y_lo, y_hi = Y_JOINT - block_h - 1.0, Y_JOINT - RES_FLOOR
+        cuts.append(cube(RES_SLOT_W, y_hi - y_lo, RES_LEN + 2.0, sx * RES_X,
+                         (y_lo + y_hi) / 2, LED_CZ - RES_LEN / 2 - 1.0))
+        for sz in (-1, 1):
+            zc = LED_CZ + sz * TIE_DZ
+            for lx in (-1, 1):
+                adds.append(on_wall(TIE_LEG, TIE_H + TIE_BAR, TIE_D,
+                                    sx * TIE_X + lx * (TIE_SPAN + TIE_LEG) / 2,
+                                    zc - TIE_D / 2))
+            adds.append(cube(TIE_SPAN + 2 * TIE_LEG, TIE_BAR, TIE_D,
+                             sx * TIE_X, Y_JOINT - TIE_H - TIE_BAR / 2,
+                             zc - TIE_D / 2))
+    return adds, cuts
+
+
+# ---------------------------------------------------------------------------
+# BELLY -- the white front. Prints face-down; everything grows up off it.
+# ---------------------------------------------------------------------------
+
+def build_belly(face: str = "blank", text: str = "AFK"):
+    y_face = DEPTH
+    adds = [inter(white_solid(), half(front=True))]
+
+    joint_adds, cuts = belly_joint()
+    adds += joint_adds
+    if LEDS != "ring":
+        loom_adds, loom_cuts = loom_mounts()
+        adds += loom_adds
+        cuts += loom_cuts
+
+    belly = union(*adds)
+
+    if LEDS == "ring":
+        # a ring cannot poke through anything, so the belly in front of it
+        # is thinned to a floor that passes light instead -- unless a glyph
+        # is already doing that job
+        if face == "blank":
+            cuts.append(ybore(RING_WINDOW_D, FRONT_WALL - RING_FLOOR + EPS,
+                              0.0, LED_CZ, Y_JOINT - EPS))
+    else:
+        # the well: thin the front wall from behind to the seat depth. Cut
+        # from the back, which is UP in this print orientation, so it is an
+        # open pocket and not a ceiling anyone has to bridge.
+        seat = led_seat()
+        cuts.append(ybore(led_well_d(), FRONT_WALL - seat + EPS, 0.0, LED_CZ,
+                          Y_JOINT - EPS))
+        # then six bores through what is left, out the front of the belly
+        for i in range(LED_COUNT):
+            x, z = led_xy(i)
+            cuts.append(ybore(LED_D + 2 * LED_CLEAR, seat + 2 * EPS, x, z,
+                              y_face - seat - EPS))
+
+    # --- the same pixel grid as the body, carried across the belly. Cut
+    # shallower here: it is a surface the LEDs stand out of rather than a
+    # panel that lights up, so the grooves want to read as lines drawn on
+    # it and not as slots cut into it.
+    cuts.append(yprism(grid_bars(ch_rect(), GROOVE_W), y_face + EPS,
+                       FACE_GROOVE_D + EPS))
+
+    if face != "blank":
+        poly = {"smiley": smiley_at, "chick": chick_poly}.get(face)
+        poly = poly() if poly else text_poly(text)
+        if LEDS == "ring":
+            # the glyph IS the window: thinned from behind to a floor thin
+            # enough to pass light, with the ring right there behind it
+            cuts.append(yprism(poly, y_face - GLYPH_FLOOR,
+                               FRONT_WALL - GLYPH_FLOOR))
+        else:
+            # nothing lights the belly from behind any more, so a glyph can
+            # only be an engraving -- and it has to keep out of the well,
+            # where there is a plate holding six LEDs straight
+            poly = poly.difference(Point(0, LED_CZ).buffer(
+                led_well_d() / 2 + 1.0, quad_segs=SEG))
+            if not poly.is_empty:
+                cuts.append(yprism(poly, y_face + EPS, GLYPH_D + EPS))
+
+    return diff(belly, *cuts)
+
+
+# ---------------------------------------------------------------------------
+# CHASSIS -- the box behind the belly. It carries the dev board, and that is
+# now the whole of its job.
+# ---------------------------------------------------------------------------
+
+def build_chassis():
+    y_face = DEPTH
+    y_back = y_face - CH_D
+    ob, ib = ch_bounds()
+
+    # --- the shelf. Full width, wall to wall, and it stops short of the USB
+    # connector at the bottom so the plug has a clear run past it. The gaps
+    # down either side are how the loom gets from the belly back to the
+    # board.
     z_conn = BOARD_CZ - BOARD_L / 2
     shelf_rect = sbox(ob[0], z_conn + SHELF_DROP, ob[2], ob[3])
-    shelf = diff(yprism(shelf_rect, y_face - SHELF_Y, SHELF_T),
-                 yprism(sbox(ib[2] - SHELF_GAP, -500, ib[2], 500),
-                        y_face - SHELF_Y + EPS, SHELF_T + 2 * EPS))
-    adds = [ch, shelf]
+    shelf = yprism(shelf_rect, y_face - SHELF_Y, SHELF_T)
+    for gap in shelf_gaps():
+        shelf = diff(shelf, yprism(gap, y_face - SHELF_Y + EPS,
+                                   SHELF_T + 2 * EPS))
+    adds = [diff(white_solid(), box_cavity()), shelf] + shelf_rib()
 
-    # --- board posts, standing on the shelf so nothing crosses the light
-    # chamber and casts a shadow on the belly
-    # --- board posts, standing on the shelf so nothing crosses the light
-    # chamber and casts a shadow on the belly. The board is longer than the
-    # box is tall, so the posts grip it well inboard of its ends rather than
-    # at its corners.
+    # --- board posts, standing on the BACK of the shelf. Forward of it is
+    # the wrong side: the shelf is a ceiling in this print orientation, so
+    # anything growing off its front face hangs in mid-air. The board is
+    # longer than the box is tall, so the posts grip it well inboard of its
+    # ends rather than at its corners.
     bw = BOARD_W + 2 * BOARD_CLEAR
     y_shelf_back = y_face - SHELF_Y - SHELF_T
     post_h = y_shelf_back - (y_face - BOARD_Y)
@@ -614,9 +1012,12 @@ def build_chassis(face: str = "blank", text: str = "AFK"):
                              sx * (tab_x + tab_w / 2 + lip_in) / 2,
                              y_board - 1.7, zc))
 
-    ch = union(*adds)
+    # Union everything FIRST, then take one cut at the joint plane, so the
+    # mating face comes out as a single flat face rather than as several
+    # that happen to be coplanar.
+    ch = inter(union(*adds), half(front=False))
+    cuts = box_joint()
 
-    cuts = []
     if LEDS == "ring":
         depth = min(RING_T, SHELF_T - 1.2)
         cuts.append(ybore(RING_OD + 2 * RING_CLEAR, depth + EPS, 0.0, LED_CZ,
@@ -624,44 +1025,29 @@ def build_chassis(face: str = "blank", text: str = "AFK"):
         cuts.append(ybore(12.0, SHELF_T + 2 * EPS, 0.0,
                           LED_CZ - (RING_OD + RING_ID) / 4,
                           y_face - SHELF_Y - SHELF_T - EPS))
-    else:
-        for i in range(LED_COUNT):
-            a = 2 * math.pi * i / LED_COUNT + math.pi / 6
-            cuts.append(ybore(LED_D + 2 * LED_CLEAR, SHELF_T + 2 * EPS,
-                              LED_CIRCLE_D / 2 * math.cos(a),
-                              LED_CZ + LED_CIRCLE_D / 2 * math.sin(a),
-                              y_face - SHELF_Y - SHELF_T - EPS))
 
     # --- pass-throughs. The board is longer than the box, and its USB
     # connector needs somewhere for a plug to go: a slot in the roof lets
     # the top of the board out into the head, and a slot in the floor lets
     # the plug down into the base. Without the second one you cannot plug
     # the thing in at all.
+    #
+    # They stop SLOT_RUNOUT past the board rather than running the whole
+    # depth. That leaves the box's front rim unbroken, and the front rim is
+    # the only thing this part stands on when it prints.
+    #
     # Cut these from the REAL bounds, not from CH_H: the outer footprint is
     # the window rect shrunk by the fit clearance, so a slot sized off the
     # nominal height leaves a fifth-of-a-millimetre membrane across it --
     # invisible in a render, and enough to stop a plug.
-    slot_y0, slot_y1 = y_back - 1.0, y_flange - FLARE
+    slot_y0, slot_y1 = y_back - 1.0, y_board + SLOT_RUNOUT
     slot_d, slot_yc = slot_y1 - slot_y0, (slot_y0 + slot_y1) / 2
     cuts.append(cube(BOARD_W + 2.0, slot_d, CH_WALL + 2 * EPS, 0.0,
                      slot_yc, ib[3] - EPS))
     cuts.append(cube(PLUG_W + 2.0, slot_d, CH_WALL + 2 * EPS, 0.0,
                      slot_yc, ob[1] - EPS))
 
-    # --- the same pixel grid as the body, carried across the belly. Cut
-    # shallower here: the face is only WALL thick and it still has to be
-    # opaque enough that the grooves read as lines rather than as gaps.
-    cuts.append(yprism(grid_bars(ch_rect(), GROOVE_W), y_face + EPS,
-                       FACE_GROOVE_D + EPS))
-
-    if face != "blank":
-        poly = {"smiley": smiley_at, "chick": chick_poly}.get(face)
-        poly = poly() if poly else text_poly(text)
-        cuts.append(yprism(poly, y_face - GLYPH_FLOOR,
-                           WALL - GLYPH_FLOOR + SHELF_Y))
-
     return diff(ch, *cuts)
-
 
 # ---------------------------------------------------------------------------
 # GLYPHS -- optional, cut into the belly with --face
@@ -889,6 +1275,50 @@ def pieces(m) -> int:
     return len({find(i) for i in range(n)})
 
 
+def flaps(m, min_area: float = 0.01) -> float:
+    """Zero-thickness sheets: two surfaces on one plane, facing opposite
+    ways, covering the same ground. Returns the overlapping area in mm2.
+
+    A boolean whose operands land on exactly the same plane leaves one of
+    these -- a face and its own reversed twin. The mesh stays watertight,
+    winds consistently, has the right volume and counts as one lump, so
+    every other check in this file passes it. Meanwhile a viewer renders
+    flickering triangles and a slicer makes a membrane out of it. It cost a
+    print to find the first time, so now it gets measured."""
+    n, v = m.face_normals, m.vertices[m.faces]
+    d = np.einsum("ij,ij->i", n, v[:, 0])
+    # canonical plane: flip each normal so its dominant term is positive,
+    # which puts a face and its twin in the same bucket
+    lead = n[np.arange(len(n)), np.argmax(np.abs(n), axis=1)]
+    flip = np.where(lead < 0.0, -1.0, 1.0)
+    cn, cd = n * flip[:, None], d * flip
+
+    groups = {}
+    for i in range(len(n)):
+        groups.setdefault((tuple(np.round(cn[i], 3)), round(float(cd[i]), 3)),
+                          ([], []))[0 if flip[i] > 0 else 1].append(i)
+
+    total = 0.0
+    for (nrm, _), (front, back) in groups.items():
+        if not front or not back:
+            continue                       # only one side: nothing to overlap
+        a = np.array(nrm, dtype=float)
+        u = np.cross(a, [0.0, 0.0, 1.0])
+        if np.linalg.norm(u) < 1e-6:
+            u = np.cross(a, [0.0, 1.0, 0.0])
+        u /= np.linalg.norm(u)
+        w = np.cross(a, u)
+
+        def flat(idx):
+            tris = [Polygon(np.column_stack([v[i] @ u, v[i] @ w])) for i in idx]
+            return unary_union([t for t in tris if t.is_valid and t.area > 0])
+
+        overlap = flat(front).intersection(flat(back)).area
+        if overlap > min_area:
+            total += overlap
+    return total
+
+
 def overhangs(m, limit_deg: float = 45.0, min_face: float = 1.0):
     """Downward-facing area steeper than `limit_deg`, once the part is laid
     out for printing. This build claims to need no supports anywhere, and
@@ -969,8 +1399,10 @@ def build_eyes():
     that reads as a dark pupil. A blind pocket would only have been a
     shadow, and a shadow disappears the moment you look at it straight.
 
-    It also means the pupils pick up a little of the spill light that gets
-    into the head, so in a dark room the eyes glow faintly too."""
+    They no longer glow: they used to pick up spill light from the light
+    chamber, and there is no light chamber now that the LEDs point out the
+    front. The dark pupil is the whole effect, and it was always the part
+    that worked in daylight."""
     s = EYE_SIZE - 2 * PRESS_CLEAR
     t = WALL + 1.6
     parts, cuts, eyes = [], [], []
@@ -1004,9 +1436,9 @@ def build_beak():
 # ---------------------------------------------------------------------------
 
 COLOUR = {"body": "black", "back": "black", "beak": "black",
-          "chassis": "white", "eyes": "white"}
-# False = open side on the plate; True = the glowing face on the plate.
-FRONT_DOWN = {"chassis", "beak"}
+          "belly": "white", "chassis": "white", "eyes": "white"}
+# False = open side on the plate; True = the front face on the plate.
+FRONT_DOWN = {"belly", "chassis", "beak"}
 
 
 def fastener_report():
@@ -1022,8 +1454,10 @@ def fastener_report():
     ok = eng >= 3.0 and free > 0.4
     print(f"  back cover x4        through {BACK_T:.1f} mm -> {eng:.2f} mm engaged "
           f"({eng / 3.0:.2f}xD), {free:.2f} mm past the tip   {'ok' if ok else 'FAIL'}")
-    print("  chassis              no screws: captured between the window and"
-          " the cover's pillars")
+    print("  belly, chassis       no screws: they snap to one another,"
+          " and the pair is captured")
+    print("                       between the body's window and the back"
+          " cover's pillars")
     print("  eyes, beak           press fit, no fasteners")
 
     # The USB connector points down off the bottom of the board. Whether a
@@ -1036,14 +1470,119 @@ def fastener_report():
           f" drop for a {PLUG_L:.0f} mm plug"
           f"   {'ok' if good_plug else 'WILL NOT PLUG IN'}")
 
-    tail = 0.0 if LEDS == "ring" else LED_BODY
-    what = "ring, flush" if LEDS == "ring" else f"{LED_D:.0f} mm LED"
+    print(f"\n  the belly is {FRONT_WALL:.1f} mm of solid PLA"
+          f" (plug {WALL:.1f} + flare {FLARE:.1f} + wall {CH_WALL:.1f})")
+    if LEDS == "ring":
+        rim = (CH_W - 2 * FLARE - 2 * WINDOW_CLEAR - RING_WINDOW_D) / 2
+        good = RING_FLOOR <= 1.6 and rim >= 2.0
+        ok &= good
+        print(f"  WS2812B ring on the shelf, {SHELF_Y + SHELF_T:.1f} mm behind"
+              f" a {RING_WINDOW_D:.0f} mm window thinned to {RING_FLOOR:.1f} mm,"
+              f" {rim:.1f} mm of rim   {'ok' if good else 'CHECK'}")
+    else:
+        seat = led_seat()
+        well = FRONT_WALL - seat
+        bore = LED_D + 2 * LED_CLEAR
+        ledge = (LED_FLANGE_D - bore) / 2
+        reach = (LED_CIRCLE_D + bore) / 2
+        room = (WINDOW[1] - WINDOW[0] + 1) * PITCH / 2 - WINDOW_CLEAR
+        good = (seat >= 2.0 and well >= 0.8 and ledge >= 0.15
+                and LED_PROUD >= 1.0 and reach <= room - 2.0)
+        ok &= good
+        print(f"  thinned to {seat:.1f} mm over a {led_well_d():.0f} mm well"
+              f" ({well:.1f} mm deep), then bored {bore:.2f} mm x {LED_COUNT}")
+        print(f"  each {LED_D:.0f} mm LED in from the back, flange onto"
+              f" {ledge:.2f} mm of ledge -> {LED_PROUD:.1f} mm of dome proud"
+              f" of the belly   {'ok' if good else 'FAIL'}")
+        print(f"  cluster reaches {reach:.1f} mm from centre into a"
+              f" {room:.1f} mm half-window, then {LED_LEAD:.1f} mm of straight"
+              f" lead and {DEPTH - seat - LED_LEAD - (DEPTH - BOARD_Y):.1f} mm"
+              f" of air to the board")
+
     gap = BOARD_Y - (SHELF_Y + SHELF_T)
     good = gap >= 2.0
     ok &= good
-    print(f"\n  LEDs sit {SHELF_Y + SHELF_T - tail:.1f}-{SHELF_Y + SHELF_T:.1f} mm"
-          f" behind the belly ({what}); board clears them by {gap:.1f} mm"
-          f"   {'ok' if good else 'TIGHT'}")
+    print(f"\n  board stands {gap:.1f} mm off the back of the shelf on its"
+          f" posts   {'ok' if good else 'TIGHT'}")
+
+    # The belly and the box snap together. A snap that cannot bend far
+    # enough to go on is a broken tongue, so print both numbers.
+    reach, allowed = snap_reach(), snap_allowed()
+    good = 0.3 <= reach <= allowed
+    ok &= good
+    print(f"\n  JOINT -- belly to chassis, no fasteners")
+    print(f"  lip           {LIP_T:.1f} mm wall, {LIP_D:.1f} mm into the box,"
+          f" {LIP_CLEAR:.2f} mm clearance a side")
+    print(f"  snap x2       tongue {SNAP_W:.0f} x {LIP_D:.0f} x {LIP_T:.1f} mm,"
+          f" catches {reach:.2f} mm of wall")
+    print(f"                needs {reach:.2f} mm of bend,"
+          f" {allowed:.2f} mm available at {PLA_STRAIN:.0%} strain"
+          f"   {'ok' if good else 'FAIL'}")
+    print(f"  clamp         the back cover's pillars, through the box, into"
+          f" the belly, into the window")
+    return ok
+
+
+def body_fit():
+    """Does the white assembly still drop into an ALREADY PRINTED body?
+
+    The body is the part nobody wants to reprint: it is the one with four
+    heat-set inserts melted into it. So these are the numbers that decide
+    whether a new belly and a new chassis go into an old body, printed
+    against the body's own geometry rather than against a memory of it."""
+    win = span(*WINDOW).bounds                       # the hole in the skin
+    plug = ch_rect().bounds                          # what fills it
+    outer = ch_rect(FLARE).bounds                    # the widest part
+    pocket = span(*WINDOW).buffer(6.0, join_style=2).bounds   # behind the skin
+
+    print()
+    print("FIT INTO THE PRINTED BODY -- the part with the inserts in it")
+    rows, ok = [], True
+
+    def row(what, have, need, unit="mm"):
+        nonlocal ok
+        good = have >= need
+        ok &= good
+        rows.append((what, have, need, unit, good))
+
+    # 1. the belly's face, into the window in the black skin
+    row("belly face into the window, X", (win[2] - win[0]) - (plug[2] - plug[0]),
+        0.2)
+    row("belly face into the window, Z", (win[3] - win[1]) - (plug[3] - plug[1]),
+        0.2)
+    # 2. and it cannot fall out through it: the flare is wider than the hole
+    row("flare vs the window, per side",
+        ((outer[2] - outer[0]) - (win[2] - win[0])) / 2, 1.0)
+    # 3. the whole assembly, into the pocket behind the skin
+    row("assembly into the pocket, X",
+        ((pocket[2] - pocket[0]) - (outer[2] - outer[0])) / 2, 0.5)
+    row("assembly into the pocket, Z",
+        ((pocket[3] - pocket[1]) - (outer[3] - outer[1])) / 2, 0.5)
+    # 4. and down the body's cavity to get there. Narrowest point over the
+    #    band of the penguin the assembly actually passes through.
+    cav = pixel_poly().buffer(-WALL)
+    narrow = min(
+        cav.intersection(sbox(-BODY_W, z - 0.25, BODY_W, z + 0.25)).bounds[2]
+        for z in np.arange(outer[1], outer[3], 2.0))
+    row("clearance down the body cavity, per side", narrow - outer[2], 0.5)
+    # 5. depth: what is left for the cover's pillars to push on
+    row("cover pillar push", DEPTH - CH_D, 2.0)
+
+    for what, have, need, unit, good in rows:
+        print(f"  {what:<42}{have:6.2f} {unit}  (>= {need:.1f})"
+              f"   {'ok' if good else 'FAIL'}")
+
+    # 6. the pillars have to land on the box's rear rim, not in mid-air
+    rim = sbox(*outer).difference(
+        sbox(outer[0] + CH_WALL, outer[1] + CH_WALL,
+             outer[2] - CH_WALL, outer[3] - CH_WALL))
+    area = sum(Point(sx * (CH_W / 2 - 3.0), CH_CZ + sz * (CH_H / 2 - 3.0))
+               .buffer(3.5, quad_segs=SEG).intersection(rim).area
+               for sx in (-1, 1) for sz in (-1, 1))
+    good = area >= 40.0
+    ok &= good
+    print(f"  {'cover pillars landing on the rear rim':<42}{area:6.1f} mm2"
+          f"  (>= 40.0)   {'ok' if good else 'FAIL'}")
     return ok
 
 
@@ -1055,20 +1594,21 @@ def board_envelope():
 
 
 def led_envelope():
-    """The six LEDs, as solids: body through the shelf plus the length of
-    lead you need behind it to bend and solder.
+    """The six LEDs, as solids: the whole LED from the dome standing proud
+    of the belly back to the flange, plus the straight lead behind it.
 
-    Their holes are cut through the shelf, so this only ever finds something
-    that has been parked IN FRONT OF or BEHIND a hole -- a board post, a
-    retention tab, a wall. Which is exactly the mistake worth catching."""
+    Their bores are cut through the belly, so this only ever finds something
+    parked in the well behind them or in the air in front of them -- a comb,
+    a tie arch, the black skin of the body. Which is exactly the mistake
+    worth catching now that there are printed features in there."""
+    if LEDS == "ring":
+        depth = min(RING_T, SHELF_T - 1.2)
+        return ybore(RING_OD, depth, 0.0, LED_CZ, DEPTH - SHELF_Y - depth)
     d = LED_D + 2 * LED_CLEAR - 0.1
-    back = DEPTH - SHELF_Y - SHELF_T - LED_LEAD
+    seat = led_seat()
     return union(*[
-        ybore(d, LED_BODY + LED_LEAD + 3.0,
-              LED_CIRCLE_D / 2 * math.cos(2 * math.pi * i / LED_COUNT + math.pi / 6),
-              LED_CZ + LED_CIRCLE_D / 2 * math.sin(2 * math.pi * i / LED_COUNT + math.pi / 6),
-              back)
-        for i in range(LED_COUNT)])
+        ybore(d, seat + LED_LEAD + LED_PROUD, x, z, DEPTH - seat - LED_LEAD)
+        for x, z in (led_xy(i) for i in range(LED_COUNT))])
 
 
 def plug_envelope():
@@ -1082,17 +1622,67 @@ def plug_envelope():
                 DEPTH - BOARD_Y - 0.8, z_conn - PLUG_L)
 
 
+def insertion(belly, box) -> bool:
+    """Can the belly actually GO IN, or does it only fit once it is there?
+
+    The interference test only ever looks at the assembled position, which
+    is precisely the wrong place to catch a joint you cannot reach. So the
+    belly is swept down its assembly axis and measured the whole way in,
+    with the snap barbs suppressed: the barbs are MEANT to ride the wall on
+    the way past, and nothing else is allowed to touch at all.
+
+    It also prints where the barb and the window actually are, measured off
+    each part's own mating face, because "is the catch on the same wall as
+    the hole" is a question worth answering with two numbers rather than by
+    turning the model over in a viewer."""
+    global BARB
+    keep, BARB = BARB, 0.001
+    try:
+        plain = build_belly()
+    finally:
+        BARB = keep
+
+    worst, worst_at = 0.0, 0.0
+    for d in np.arange(LIP_D + 3.0, -0.01, -1.5):
+        m = plain.copy()
+        m.apply_translation((0.0, float(d), 0.0))
+        v = inter(m, box).volume
+        if v > worst:
+            worst, worst_at = v, float(d)
+
+    _, ib = ch_bounds()
+    tip = LIP_D                                   # barb, off the belly's face
+    win_lo = LIP_D - BARB_RUN - BARB_CLEAR        # window, off the chassis's
+    ok = worst <= 5.0
+    print()
+    print("INSERTION -- belly into chassis, swept the whole way in")
+    print(f"  barb      {tip - BARB_RUN:.2f}-{tip:.2f} mm off the belly's mating"
+          f" face, out to x {ib[2] - LIP_CLEAR + BARB:+.2f}")
+    print(f"  window    {win_lo:.2f}-{LIP_D + 0.5:.2f} mm off the chassis's,"
+          f" through both side walls at x {ib[2]:.1f}..{ib[2] + CH_WALL:.1f}")
+    print(f"  swept     worst contact {worst:.2f} mm3, with the barbs removed"
+          f", at {worst_at:.1f} mm out   {'ok' if ok else 'BLOCKED'}")
+    if not ok:
+        print("            something other than the barb is in the way")
+    return ok
+
+
 def interference(parts):
     """Boolean-intersect the assembled parts. Anything above a rounding
     error is two pieces of plastic trying to occupy the same place."""
     print("\nFIT -- assembled interference (cm3)")
     parts = dict(parts, board=board_envelope(), plug=plug_envelope(),
                  leds=led_envelope())
-    pairs = [("body", "back"), ("body", "chassis"), ("body", "eyes"),
-             ("body", "beak"), ("back", "chassis"), ("chassis", "eyes"),
-             ("board", "body"), ("board", "chassis"), ("board", "back"),
-             ("plug", "body"), ("plug", "chassis"), ("plug", "back"),
-             ("leds", "chassis"), ("leds", "board"), ("leds", "plug")]
+    pairs = [("body", "back"), ("body", "belly"), ("body", "chassis"),
+             ("body", "eyes"), ("body", "beak"),
+             ("belly", "chassis"), ("belly", "back"), ("belly", "eyes"),
+             ("back", "chassis"), ("chassis", "eyes"),
+             ("board", "body"), ("board", "belly"), ("board", "chassis"),
+             ("board", "back"),
+             ("plug", "body"), ("plug", "belly"), ("plug", "chassis"),
+             ("plug", "back"),
+             ("leds", "body"), ("leds", "belly"), ("leds", "chassis"),
+             ("leds", "board"), ("leds", "plug")]
     ok = True
     for a, b in pairs:
         if a not in parts or b not in parts:
@@ -1109,11 +1699,23 @@ def interference(parts):
 
 
 def max_bridge() -> float:
-    """Widest unsupported span in the chassis's LED shelf: it is the only
-    ceiling in the build, and a bridge is judged on span, not area."""
-    ob = ch_rect(FLARE).bounds
-    ib = (ob[0] + CH_WALL, ob[1] + CH_WALL, ob[2] - CH_WALL, ob[3] - CH_WALL)
-    region = sbox(ib[0], BOARD_CZ - BOARD_L / 2 + SHELF_DROP, ib[2], ib[3])         .difference(sbox(ib[2] - SHELF_GAP, -500, ib[2], 500))
+    """How far the shelf ever runs from something holding it up.
+
+    The shelf is the only ceiling in the build. This is the largest circle
+    that fits in the part of it with nothing underneath -- the side walls
+    hold its edges, the rib holds its middle, and this is twice the worst
+    distance to the nearer of them.
+
+    The LED well is not a ceiling. It is cut into the BACK of the belly's
+    front wall, and the back faces up on the plate, so it is an open
+    pocket."""
+    ob, ib = ch_bounds()
+    region = sbox(ib[0], BOARD_CZ - BOARD_L / 2 + SHELF_DROP, ib[2], ib[3])
+    for gap in shelf_gaps():
+        region = region.difference(gap)
+    if LEDS != "ring":
+        region = region.difference(sbox(-RIB_T / 2, LED_CZ - RIB_Z / 2,
+                                        RIB_T / 2, LED_CZ + RIB_Z / 2))
     lo, hi = 0.0, 60.0
     for _ in range(24):
         mid = 0.5 * (lo + hi)
@@ -1125,7 +1727,8 @@ def max_bridge() -> float:
 
 
 def main():
-    global INSERT_OD, INSERT_BORE, LED_D, LEDS, RING_OD, RING_ID
+    global INSERT_OD, INSERT_BORE, LED_D, LED_BODY, LED_PROUD
+    global LEDS, RING_OD, RING_ID
 
     ap = argparse.ArgumentParser(description="Generate rookery penguin parts.")
     ap.add_argument("--out", default="stl")
@@ -1133,6 +1736,8 @@ def main():
                     help="heat-set insert outer diameter (measure yours)")
     ap.add_argument("--led-d", type=float, default=LED_D,
                     help="LED body diameter: 5.0 or 3.0")
+    ap.add_argument("--led-proud", type=float, default=LED_PROUD,
+                    help="how far each dome stands out of the belly (mm)")
     ap.add_argument("--leds", choices=("discrete", "ring"), default=LEDS,
                     help="six through-hole LEDs, or one WS2812B ring "
                          "(firmware env:esp32s3-neopixel)")
@@ -1152,6 +1757,9 @@ def main():
     INSERT_OD = args.insert_od
     INSERT_BORE = INSERT_OD - INSERT_GRIP
     LED_D = args.led_d
+    # A 3 mm LED is a shorter LED, and the seat is measured off its length.
+    LED_BODY = LED_BODY if LED_D >= 4.0 else LED_BODY_3MM
+    LED_PROUD = args.led_proud
     LEDS = args.leds
     RING_OD, RING_ID = args.ring_od, args.ring_id
 
@@ -1159,14 +1767,16 @@ def main():
 
     parts = {
         "body": build_body(),
-        "chassis": build_chassis(args.face, args.text),
+        "belly": build_belly(args.face, args.text),
+        "chassis": build_chassis(),
         "back": build_back(),
         "eyes": build_eyes(),
         "beak": build_beak(),
     }
 
     print(f"{'part':<12}{'solid':>8}{'vol cm3':>10}{'~g':>6}"
-          f"{'size mm':>24}{'plate':>8}{'lumps':>7}{'ovrhng':>8}{'bridged':>9}")
+          f"{'size mm':>22}{'plate':>8}{'lumps':>7}{'flaps':>7}"
+          f"{'ovrhng':>8}{'bridged':>9}")
     bad = 0
     for name, m in parts.items():
         e = m.extents
@@ -1178,24 +1788,32 @@ def main():
                 and p.extents[2] <= PLATE_Z)
         slope, bridged = overhangs(p)
         lumps = pieces(m)
-        bad += (not ok) + (not fits) + (slope > 40.0) + (lumps != 1)
+        flap = flaps(w)
+        bad += ((not ok) + (not fits) + (slope > 40.0) + (lumps != 1)
+                + (flap > 0.01))
         print(f"  {name:<10}{('ok' if ok else 'BROKEN'):>8}{m.volume / 1000:>10.1f}"
               f"{m.volume / 1000 * 1.24:>6.0f}"
-              f"{f'{e[0]:.0f} x {e[1]:.0f} x {e[2]:.0f}':>24}"
+              f"{f'{e[0]:.0f} x {e[1]:.0f} x {e[2]:.0f}':>22}"
               f"{('ok' if fits else 'TOO BIG'):>8}"
               f"{(str(lumps) if lumps == 1 else f'{lumps} !!'):>7}"
+              f"{('-' if flap <= 0.01 else f'{flap:.0f} !!'):>7}"
               f"{f'{slope:.0f}':>8}{f'{bridged:.0f}':>9}")
         p.export(os.path.join(args.out, f"{name}.stl"))
 
     span_mm = max_bridge()
-    print(f"\n  LED shelf bridges the chassis, widest span {span_mm:.0f} mm"
+    print(f"\n  the shelf bridges the chassis, widest span {span_mm:.0f} mm"
           f"   {'ok' if span_mm < 46 else 'TOO WIDE'}")
     bad += span_mm >= 46
 
     if not fastener_report():
         bad += 1
-    if not args.no_check and not interference(parts):
+    if not body_fit():
         bad += 1
+    if not args.no_check:
+        if not insertion(parts["belly"], parts["chassis"]):
+            bad += 1
+        if not interference(parts):
+            bad += 1
 
     print()
     n = 0

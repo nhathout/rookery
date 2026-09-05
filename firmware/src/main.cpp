@@ -10,7 +10,7 @@
 //   orange  link lost   slow blink  (the host daemon stopped talking)
 //   white   ident       blink on request / boot self-test
 //
-// Protocol (newline-terminated ASCII, 115200 8N1) -- see docs/PROTOCOL.md
+// Protocol (newline-terminated ASCII, 115200 8N1) -- see docs/protocol.md
 //   ->  PING                 <-  PONG rookery <fw>
 //   ->  STATE working        <-  OK state working
 //   ->  BRIGHT 120           <-  OK bright 120
@@ -319,7 +319,7 @@ static Lamp g_manual = lampOff();
 // because a blue LED on a 3.3 V pin only gets a couple of milliamps (its
 // forward voltage is nearly the supply) while yellow gets a comfortable
 // seven. Equal duty would make blue invisible. If your blue is still too
-// faint, raise LVL_ASLEEP or see WIRING.md for the transistor fix.
+// faint, raise LVL_ASLEEP or see docs/hardware/wiring.md for the transistor fix.
 #ifndef LVL_WORK_MIN
 #define LVL_WORK_MIN 115
 #endif
